@@ -42,6 +42,8 @@ boolean paused = false;
 String saveStatus = "";
 int saveStatusFrames = 0;
 
+// setup 
+
 void setup() {
 
     size(1200, 857);
