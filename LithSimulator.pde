@@ -1,0 +1,503 @@
+import controlP5.*;
+
+PImage sourceImage;
+
+PImage simView;
+ControlP5 cp5;
+
+int panelW = 280;
+int panelPadding = 16;
+int panelImageGutter = 18;
+
+int simW;
+int simH;
+int simSize;
+
+float[] toneSeed;
+float[] toneNoise;
+float[] bandProfile;
+
+float[] devA;
+float[] devB;
+
+float[] exhaustedA;
+float[] exhaustedB;
+
+float[] developedA;
+float[] developedB;
+
+float seedRate = 0.030;
+float infectionRate = 0.170;
+float developRate = 0.110;
+float exhaustionRate = 0.055;
+float exhaustionRecovery = 0.012;
+float autocatalyticRate = 0.150;
+float lightHue = 33;
+float lightSaturation = 25;
+float noiseAmount = 0.0;
+float agitationBands = 0.0;
+
+int stepsPerFrame = 1;
+boolean paused = false;
+String saveStatus = "";
+int saveStatusFrames = 0;
+
+void setup() {
+
+    size(1200, 857);
+	pixelDensity(displayDensity());
+
+	// Load image.jpg from the sketch's data folder.
+	sourceImage = loadImage("image.jpg");
+
+	if (sourceImage == null) {
+		background(0);
+		fill(255, 0, 0);
+		text("Failed to load image.jpg", 20, 40);
+		noLoop();
+		return;
+	}
+
+	initializeControls();
+	initializeSimulation();
+}
+
+void draw() {
+	if (sourceImage != null) {
+		if (!paused) {
+			for (int i = 0; i < stepsPerFrame; i++) {
+				stepSimulation();
+			}
+		}
+
+		renderSimulation();
+
+		background(0);
+		drawPanelBackground();
+
+		float viewportX = panelW + panelImageGutter;
+		float viewportW = width - viewportX;
+		float viewportH = height;
+
+		float scale = min(viewportW / simW, viewportH / simH);
+		float drawW = simW * scale;
+		float drawH = simH * scale;
+		float drawX = viewportX + (viewportW - drawW) * 0.5;
+		float drawY = (viewportH - drawH) * 0.5;
+
+		image(simView, drawX, drawY, drawW, drawH);
+	}
+}
+
+void drawPanelBackground() {
+	noStroke();
+	fill(20, 24, 28);
+	rect(0, 0, panelW, height);
+
+	stroke(60);
+	line(panelW - 1, 0, panelW - 1, height);
+	noStroke();
+
+	String status = paused ? "paused" : "running";
+	fill(232);
+	text("lith infection sim", panelPadding, 24);
+	text("status: " + status, panelPadding, 42);
+
+	if (saveStatusFrames > 0) {
+		fill(190);
+		text(saveStatus, panelPadding, height - 14);
+		saveStatusFrames--;
+	}
+}
+
+void initializeControls() {
+	cp5 = new ControlP5(this);
+
+	int x = panelPadding;
+	int y = 58;
+	int fullW = panelW - panelPadding * 2;
+	int w = fullW / 2;
+	int h = 18;
+	int gap = 34;
+
+	cp5.addSlider("seedRate")
+		.setPosition(x, y)
+		.setSize(w, h)
+		.setRange(0, 1)
+		.setValue(seedRate)
+		.setLabel("seed rate");
+	y += gap;
+
+	cp5.addSlider("infectionRate")
+		.setPosition(x, y)
+		.setSize(w, h)
+		.setRange(0, 1)
+		.setValue(infectionRate)
+		.setLabel("infection rate");
+	y += gap;
+
+	cp5.addSlider("developRate")
+		.setPosition(x, y)
+		.setSize(w, h)
+		.setRange(0, 1)
+		.setValue(developRate)
+		.setLabel("develop rate");
+	y += gap;
+
+	cp5.addSlider("exhaustionRate")
+		.setPosition(x, y)
+		.setSize(w, h)
+		.setRange(0, 1)
+		.setValue(exhaustionRate)
+		.setLabel("exhaustion rate");
+	y += gap;
+
+	cp5.addSlider("exhaustionRecovery")
+		.setPosition(x, y)
+		.setSize(w, h)
+		.setRange(0, 1)
+		.setValue(exhaustionRecovery)
+		.setLabel("recovery rate");
+	y += gap;
+
+	cp5.addSlider("autocatalyticRate")
+		.setPosition(x, y)
+		.setSize(w, h)
+		.setRange(0, 1)
+		.setValue(autocatalyticRate)
+		.setLabel("autocatalytic rate");
+	y += gap;
+
+	cp5.addSlider("lightHue")
+		.setPosition(x, y)
+		.setSize(w, h)
+		.setRange(0, 360)
+		.setValue(lightHue)
+		.setLabel("light hue");
+	y += gap;
+
+	cp5.addSlider("lightSaturation")
+		.setPosition(x, y)
+		.setSize(w, h)
+		.setRange(0, 100)
+		.setValue(lightSaturation)
+		.setLabel("light saturation");
+	y += gap;
+
+	cp5.addSlider("noiseAmount")
+		.setPosition(x, y)
+		.setSize(w, h)
+		.setRange(0, 0.5)
+		.setValue(noiseAmount)
+		.setLabel("noise amount");
+	y += gap;
+
+	cp5.addSlider("agitationBands")
+		.setPosition(x, y)
+		.setSize(w, h)
+		.setRange(0, 1)
+		.setValue(agitationBands)
+		.setLabel("agitation bands");
+	y += gap;
+
+	cp5.addSlider("stepsPerFrame")
+		.setPosition(x, y)
+		.setSize(w, h)
+		.setRange(1, 20)
+		.setNumberOfTickMarks(20)
+		.setDecimalPrecision(0)
+		.setValue(stepsPerFrame)
+		.setLabel("steps per frame");
+	y += gap + 10;
+
+	cp5.addButton("resetSimulation")
+		.setPosition(x, y)
+		.setSize((w - 8) / 2, 24)
+		.setLabel("Reset");
+
+	cp5.addButton("togglePause")
+		.setPosition(x + (w - 8) / 2 + 8, y)
+		.setSize((w - 8) / 2, 24)
+		.setLabel("Pause / Run");
+
+	y += 34;
+	cp5.addButton("saveFullResPng")
+		.setPosition(x, y)
+		.setSize(w, 24)
+		.setLabel("Save PNG");
+}
+
+public void resetSimulation() {
+	initializeSimulation();
+}
+
+public void togglePause() {
+	paused = !paused;
+}
+
+public void saveFullResPng() {
+	if (simView == null) {
+		saveStatus = "save failed: no image";
+		saveStatusFrames = 180;
+		return;
+	}
+
+	String stamp = year()
+		+ nf(month(), 2)
+		+ nf(day(), 2)
+		+ "_"
+		+ nf(hour(), 2)
+		+ nf(minute(), 2)
+		+ nf(second(), 2);
+	String fileName = "lith_" + stamp + ".png";
+
+	simView.save(sketchPath(fileName));
+	saveStatus = "saved " + fileName;
+	saveStatusFrames = 240;
+}
+
+void initializeSimulation() {
+	simW = sourceImage.width;
+	simH = sourceImage.height;
+	simSize = simW * simH;
+
+	toneSeed = new float[simSize];
+
+	devA = new float[simSize];
+	devB = new float[simSize];
+
+	exhaustedA = new float[simSize];
+	exhaustedB = new float[simSize];
+
+	developedA = new float[simSize];
+	developedB = new float[simSize];
+	toneNoise = new float[simSize];
+	bandProfile = new float[simW];
+
+	loadToneSeed();
+	buildBandProfile();
+
+	simView = createImage(simW, simH, RGB);
+}
+
+void loadToneSeed() {
+	sourceImage.loadPixels();
+
+	for (int y = 0; y < simH; y++) {
+		int srcY = y;
+		for (int x = 0; x < simW; x++) {
+			int srcX = x;
+			int srcIdx = srcY * sourceImage.width + srcX;
+			int idx = y * simW + x;
+
+			float b = brightness(sourceImage.pixels[srcIdx]) / 255.0;
+			float t = constrain(1.0 - b, 0, 1);
+			float n = random(-1.0, 1.0);
+
+			toneSeed[idx] = t;
+			toneNoise[idx] = n;
+			devA[idx] = 0;
+			exhaustedA[idx] = 0;
+			developedA[idx] = pow(t, 1.6) * 0.015;
+		}
+	}
+}
+
+void buildBandProfile() {
+	for (int x = 0; x < simW; x++) {
+		bandProfile[x] = random(-1.0, 1.0);
+	}
+
+	float[] temp = new float[simW];
+	for (int pass = 0; pass < 6; pass++) {
+		for (int x = 0; x < simW; x++) {
+			float c = bandProfile[x] * 0.5;
+			float l = bandProfile[max(0, x - 1)] * 0.25;
+			float r = bandProfile[min(simW - 1, x + 1)] * 0.25;
+			temp[x] = c + l + r;
+		}
+
+		arrayCopy(temp, bandProfile);
+	}
+
+	float maxAbs = 0.0001;
+	for (int x = 0; x < simW; x++) {
+		maxAbs = max(maxAbs, abs(bandProfile[x]));
+	}
+	for (int x = 0; x < simW; x++) {
+		bandProfile[x] /= maxAbs;
+	}
+}
+
+void stepSimulation() {
+	for (int y = 0; y < simH; y++) {
+		for (int x = 0; x < simW; x++) {
+			int idx = y * simW + x;
+
+			float localDev = devA[idx];
+			float localExhausted = exhaustedA[idx];
+			float localDeveloped = developedA[idx];
+			float band = bandProfile[x] * agitationBands;
+			float localNoiseAmount = max(0, noiseAmount * (1.0 + band));
+			float t = constrain(toneSeed[idx] + toneNoise[idx] * localNoiseAmount, 0, 1);
+
+			float neighborDev = neighborhoodDeveloper(x, y);
+
+			float freshFraction = 1.0 - localExhausted;
+			float seed = seedRate * t * freshFraction * (1.0 - localDeveloped);
+			float autocatalysis = autocatalyticRate * localDeveloped * t * freshFraction;
+			float infection = infectionRate * max(0, neighborDev - localDev) * freshFraction;
+
+			float devGain = seed + autocatalysis + infection;
+			float devLoss = exhaustionRate * localDev;
+			float nextDev = constrain(localDev + devGain - devLoss, 0, 1);
+
+			float dDevelop = developRate * nextDev * t * (1.0 - localDeveloped);
+			float nextDeveloped = constrain(localDeveloped + dDevelop, 0, 1);
+
+			float exhaustGain = exhaustionRate * (nextDev + dDevelop * 0.5);
+			float exhaustLoss = exhaustionRecovery * (1.0 - nextDev);
+			float nextExhausted = constrain(localExhausted + exhaustGain - exhaustLoss, 0, 1);
+
+			devB[idx] = nextDev;
+			exhaustedB[idx] = nextExhausted;
+			developedB[idx] = nextDeveloped;
+		}
+	}
+
+	swapBuffers();
+}
+
+float neighborhoodDeveloper(int x, int y) {
+	float sum = 0;
+	float weight = 0;
+
+	for (int oy = -1; oy <= 1; oy++) {
+		int ny = y + oy;
+		if (ny < 0 || ny >= simH) {
+			continue;
+		}
+
+		for (int ox = -1; ox <= 1; ox++) {
+			int nx = x + ox;
+			if (nx < 0 || nx >= simW) {
+				continue;
+			}
+
+			if (ox == 0 && oy == 0) {
+				continue;
+			}
+
+			float w = (abs(ox) + abs(oy) == 2) ? 0.7071 : 1.0;
+			sum += devA[ny * simW + nx] * w;
+			weight += w;
+		}
+	}
+
+	if (weight == 0) {
+		return devA[y * simW + x];
+	}
+
+	return sum / weight;
+}
+
+void swapBuffers() {
+	float[] tmp;
+
+	tmp = devA;
+	devA = devB;
+	devB = tmp;
+
+	tmp = exhaustedA;
+	exhaustedA = exhaustedB;
+	exhaustedB = tmp;
+
+	tmp = developedA;
+	developedA = developedB;
+	developedB = tmp;
+}
+
+void renderSimulation() {
+	simView.loadPixels();
+
+	// Light-tone anchor is controlled by hue/saturation sliders.
+	float[] lightTone = hueSatToRgb(lightHue, lightSaturation, 80);
+	float sepiaR = lightTone[0];
+	float sepiaG = lightTone[1];
+	float sepiaB = lightTone[2];
+	float sepiaPivot = 0.55;
+
+	for (int i = 0; i < simSize; i++) {
+		float d = developedA[i];
+		float e = exhaustedA[i];
+
+		float ink = constrain(d + 0.35 * d * d, 0, 1);
+		float paper = 1.0 - ink;
+		paper *= (1.0 - 0.10 * e);
+
+		// density: 0 -> white paper, 1 -> fully developed black.
+		float density = 1.0 - constrain(paper, 0, 1);
+		float r;
+		float g;
+		float b;
+
+		if (density <= sepiaPivot) {
+			// Low density: white to sepia.
+			float t = density / sepiaPivot;
+			r = lerp(255, sepiaR, t);
+			g = lerp(255, sepiaG, t);
+			b = lerp(255, sepiaB, t);
+		} else {
+			// High density: sepia to black.
+			float t = (density - sepiaPivot) / (1.0 - sepiaPivot);
+			r = lerp(sepiaR, 0, t);
+			g = lerp(sepiaG, 0, t);
+			b = lerp(sepiaB, 0, t);
+		}
+
+		simView.pixels[i] = color(r, g, b);
+	}
+
+	simView.updatePixels();
+}
+
+float[] hueSatToRgb(float hueDeg, float satPct, float valuePct) {
+	float h = (hueDeg % 360 + 360) % 360;
+	float s = constrain(satPct, 0, 100) / 100.0;
+	float v = constrain(valuePct, 0, 100) / 100.0;
+
+	float c = v * s;
+	float hp = h / 60.0;
+	float x = c * (1.0 - abs(hp % 2 - 1.0));
+
+	float rp = 0;
+	float gp = 0;
+	float bp = 0;
+
+	if (hp < 1) {
+		rp = c;
+		gp = x;
+	} else if (hp < 2) {
+		rp = x;
+		gp = c;
+	} else if (hp < 3) {
+		gp = c;
+		bp = x;
+	} else if (hp < 4) {
+		gp = x;
+		bp = c;
+	} else if (hp < 5) {
+		rp = x;
+		bp = c;
+	} else {
+		rp = c;
+		bp = x;
+	}
+
+	float m = v - c;
+	float r = (rp + m) * 255.0;
+	float g = (gp + m) * 255.0;
+	float b = (bp + m) * 255.0;
+
+	return new float[] {r, g, b};
+}
