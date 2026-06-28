@@ -38,6 +38,7 @@ float lightSaturation = 25;
 float noiseAmount = 0.0;
 float agitationBands = 0.0;
 boolean paused = false;
+boolean simulationReady = false;
 long iterationCount = 0;
 String saveStatus = "";
 int saveStatusFrames = 0;
@@ -46,7 +47,7 @@ int saveStatusFrames = 0;
 
 void setup() {
 
-    size(1200, 857);
+    size(1300, 857);
 	pixelDensity(displayDensity());
 
 	initializeControls();
@@ -58,7 +59,8 @@ void draw() {
 	background(0);
 	drawPanelBackground();
 
-	if (sourceImage != null && devA != null && exhaustedA != null && developedA != null) {
+	if (simulationReady && sourceImage != null && devA != null && exhaustedA != null && developedA != null
+		&& toneSeed != null && toneNoise != null && bandProfile != null) {
 		if (!paused) {
 			stepSimulation();
 			iterationCount++;
@@ -298,6 +300,7 @@ public void onImageFileSelected(File selection) {
 }
 
 void clearSimulationBuffers() {
+	simulationReady = false;
 	simView = null;
 	toneSeed = null;
 	toneNoise = null;
@@ -338,6 +341,7 @@ void initializeSimulation() {
 	buildBandProfile();
 
 	simView = createImage(simW, simH, RGB);
+	simulationReady = true;
 }
 
 void loadToneSeed() {
@@ -390,6 +394,11 @@ void buildBandProfile() {
 }
 
 void stepSimulation() {
+	if (devA == null || devB == null || exhaustedA == null || exhaustedB == null || developedA == null || developedB == null
+		|| toneSeed == null || toneNoise == null || bandProfile == null) {
+		return;
+	}
+
 	for (int y = 0; y < simH; y++) {
 		for (int x = 0; x < simW; x++) {
 			int idx = y * simW + x;
