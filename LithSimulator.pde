@@ -116,7 +116,9 @@ void drawPanelBackground() {
 
 	String status = paused ? "paused" : "running";
 	fill(232);
+	textSize(16);
 	text("LITH SIMULATION", panelPadding, 24);
+	textSize(12);
 	text("status: " + status, panelPadding, 42);
 
 	if (saveStatusFrames > 0) {
