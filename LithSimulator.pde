@@ -27,16 +27,27 @@ float[] exhaustedB;
 float[] developedA;
 float[] developedB;
 
-float seedRate = 0.030;
-float infectionRate = 0.170;
-float developRate = 0.110;
-float exhaustionRate = 0.055;
-float exhaustionRecovery = 0.012;
-float autocatalyticRate = 0.150;
-float lightHue = 33;
-float lightSaturation = 25;
-float noiseAmount = 0.0;
-float agitationBands = 0.0;
+final float DEFAULT_SEED_RATE = 0.030;
+final float DEFAULT_INFECTION_RATE = 0.170;
+final float DEFAULT_DEVELOP_RATE = 0.110;
+final float DEFAULT_EXHAUSTION_RATE = 0.055;
+final float DEFAULT_EXHAUSTION_RECOVERY = 0.012;
+final float DEFAULT_AUTOCATALYTIC_RATE = 0.150;
+final float DEFAULT_LIGHT_HUE = 33;
+final float DEFAULT_LIGHT_SATURATION = 25;
+final float DEFAULT_NOISE_AMOUNT = 0.0;
+final float DEFAULT_AGITATION_BANDS = 0.0;
+
+float seedRate = DEFAULT_SEED_RATE;
+float infectionRate = DEFAULT_INFECTION_RATE;
+float developRate = DEFAULT_DEVELOP_RATE;
+float exhaustionRate = DEFAULT_EXHAUSTION_RATE;
+float exhaustionRecovery = DEFAULT_EXHAUSTION_RECOVERY;
+float autocatalyticRate = DEFAULT_AUTOCATALYTIC_RATE;
+float lightHue = DEFAULT_LIGHT_HUE;
+float lightSaturation = DEFAULT_LIGHT_SATURATION;
+float noiseAmount = DEFAULT_NOISE_AMOUNT;
+float agitationBands = DEFAULT_AGITATION_BANDS;
 boolean paused = false;
 boolean simulationReady = false;
 long iterationCount = 0;
@@ -74,15 +85,18 @@ void draw() {
 			return;
 		}
 
+		boolean portraitImage = frameView.height > frameView.width;
+
 		float viewportX = panelW + panelImageGutter;
 		float viewportW = width - viewportX - panelImageGutter;
-		float viewportH = height;
+		float viewportY = portraitImage ? panelImageGutter : 0;
+		float viewportH = portraitImage ? height - panelImageGutter * 2 : height;
 
 		float scale = min(viewportW / frameView.width, viewportH / frameView.height);
 		float drawW = frameView.width * scale;
 		float drawH = frameView.height * scale;
 		float drawX = viewportX + (viewportW - drawW) * 0.5;
-		float drawY = (viewportH - drawH) * 0.5;
+		float drawY = viewportY + (viewportH - drawH) * 0.5;
 
 		image(frameView, drawX, drawY, drawW, drawH);
 	} else {
@@ -214,12 +228,18 @@ void initializeControls() {
 	cp5.addButton("resetSimulation")
 		.setPosition(x, y)
 		.setSize(w, 24)
-		.setLabel("Reset")
+		.setLabel("Restart")
 		.setColorBackground(color(90, 20, 20))
 		.setColorForeground(color(120, 30, 30))
 		.setColorActive(color(150, 40, 40));
 
-	y += 58;
+	y += 44;
+		cp5.addButton("resetControls")
+		.setPosition(x, y)
+		.setSize(w, 24)
+		.setLabel("Defaults");
+
+	y += 44;
 	cp5.addButton("loadImageFromDialog")
 		.setPosition(x, y)
 		.setSize(w, 24)
@@ -240,6 +260,44 @@ public void resetSimulation() {
 	}
 
 	initializeSimulation();
+}
+
+public void resetControls() {
+	seedRate = DEFAULT_SEED_RATE;
+	infectionRate = DEFAULT_INFECTION_RATE;
+	developRate = DEFAULT_DEVELOP_RATE;
+	exhaustionRate = DEFAULT_EXHAUSTION_RATE;
+	exhaustionRecovery = DEFAULT_EXHAUSTION_RECOVERY;
+	autocatalyticRate = DEFAULT_AUTOCATALYTIC_RATE;
+	lightHue = DEFAULT_LIGHT_HUE;
+	lightSaturation = DEFAULT_LIGHT_SATURATION;
+	noiseAmount = DEFAULT_NOISE_AMOUNT;
+	agitationBands = DEFAULT_AGITATION_BANDS;
+
+	setControlValue("seedRate", seedRate);
+	setControlValue("infectionRate", infectionRate);
+	setControlValue("developRate", developRate);
+	setControlValue("exhaustionRate", exhaustionRate);
+	setControlValue("exhaustionRecovery", exhaustionRecovery);
+	setControlValue("autocatalyticRate", autocatalyticRate);
+	setControlValue("lightHue", lightHue);
+	setControlValue("lightSaturation", lightSaturation);
+	setControlValue("noiseAmount", noiseAmount);
+	setControlValue("agitationBands", agitationBands);
+
+	saveStatus = "controls reset";
+	saveStatusFrames = 180;
+}
+
+void setControlValue(String controlName, float value) {
+	if (cp5 == null) {
+		return;
+	}
+
+	Controller<?> control = cp5.getController(controlName);
+	if (control != null) {
+		control.setValue(value);
+	}
 }
 
 public void togglePause() {
