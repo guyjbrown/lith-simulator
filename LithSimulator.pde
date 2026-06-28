@@ -58,25 +58,31 @@ void draw() {
 	background(0);
 	drawPanelBackground();
 
-	if (sourceImage != null && simView != null && devA != null && exhaustedA != null && developedA != null) {
+	if (sourceImage != null && devA != null && exhaustedA != null && developedA != null) {
 		if (!paused) {
 			stepSimulation();
 			iterationCount++;
 		}
 
 		renderSimulation();
+		PImage frameView = simView;
+		if (frameView == null || frameView.width <= 0 || frameView.height <= 0) {
+			fill(210);
+			text("No image loaded", panelW + panelImageGutter + 16, 32);
+			return;
+		}
 
 		float viewportX = panelW + panelImageGutter;
 		float viewportW = width - viewportX;
 		float viewportH = height;
 
-		float scale = min(viewportW / simW, viewportH / simH);
-		float drawW = simW * scale;
-		float drawH = simH * scale;
+		float scale = min(viewportW / frameView.width, viewportH / frameView.height);
+		float drawW = frameView.width * scale;
+		float drawH = frameView.height * scale;
 		float drawX = viewportX + (viewportW - drawW) * 0.5;
 		float drawY = (viewportH - drawH) * 0.5;
 
-		image(simView, drawX, drawY, drawW, drawH);
+		image(frameView, drawX, drawY, drawW, drawH);
 	} else {
 		fill(210);
 		text("No image loaded", panelW + panelImageGutter + 16, 32);
@@ -283,6 +289,7 @@ public void onImageFileSelected(File selection) {
 		return;
 	}
 
+	clearSimulationBuffers();
 	sourceImage = loaded;
 	initializeSimulation();
 	paused = false;
@@ -290,7 +297,25 @@ public void onImageFileSelected(File selection) {
 	saveStatusFrames = 240;
 }
 
+void clearSimulationBuffers() {
+	simView = null;
+	toneSeed = null;
+	toneNoise = null;
+	bandProfile = null;
+	devA = null;
+	devB = null;
+	exhaustedA = null;
+	exhaustedB = null;
+	developedA = null;
+	developedB = null;
+	simW = 0;
+	simH = 0;
+	simSize = 0;
+}
+
 void initializeSimulation() {
+	clearSimulationBuffers();
+
 	simW = sourceImage.width;
 	simH = sourceImage.height;
 	simSize = simW * simH;
@@ -453,11 +478,18 @@ void swapBuffers() {
 }
 
 void renderSimulation() {
-	if (simView == null || developedA == null || exhaustedA == null) {
+	PImage view = simView;
+	float[] developed = developedA;
+	float[] exhausted = exhaustedA;
+
+	if (view == null || developed == null || exhausted == null) {
 		return;
 	}
 
-	simView.loadPixels();
+	view.loadPixels();
+	if (view.pixels == null) {
+		return;
+	}
 
 	// Light-tone anchor is controlled by hue/saturation sliders.
 	float[] lightTone = hueSatToRgb(lightHue, lightSaturation, 80);
@@ -465,10 +497,11 @@ void renderSimulation() {
 	float sepiaG = lightTone[1];
 	float sepiaB = lightTone[2];
 	float sepiaPivot = 0.55;
+	int maxCount = min(simSize, min(view.pixels.length, min(developed.length, exhausted.length)));
 
-	for (int i = 0; i < simSize; i++) {
-		float d = developedA[i];
-		float e = exhaustedA[i];
+	for (int i = 0; i < maxCount; i++) {
+		float d = developed[i];
+		float e = exhausted[i];
 
 		float ink = constrain(d + 0.35 * d * d, 0, 1);
 		float paper = 1.0 - ink;
@@ -494,10 +527,10 @@ void renderSimulation() {
 			b = lerp(sepiaB, 0, t);
 		}
 
-		simView.pixels[i] = color(r, g, b);
+		view.pixels[i] = color(r, g, b);
 	}
 
-	simView.updatePixels();
+	view.updatePixels();
 }
 
 float[] hueSatToRgb(float hueDeg, float satPct, float valuePct) {
