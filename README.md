@@ -144,10 +144,10 @@ Reinitializes the simulation using the currently loaded image.
 ### Pause / Run
 Toggles simulation stepping.
 
-### Save PNG
-Writes the current rendered image to the sketch folder as:
+### Save Image
+Writes the current rendered image to the sketch folder in TIFF format as:
 
-- `lith_YYYYMMDD_HHMMSS.png`
+- `lith_YYYYMMDD_HHMMSS.tif`
 
 ## Practical tuning tips
 
