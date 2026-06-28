@@ -190,29 +190,33 @@ void initializeControls() {
 		.setRange(0, 1)
 		.setValue(agitationBands)
 		.setLabel("agitation bands");
-	y += 10;
-
-	cp5.addButton("resetSimulation")
-		.setPosition(x, y)
-		.setSize((w - 8) / 2, 24)
-		.setLabel("Reset");
+	y += gap;
 
 	cp5.addButton("togglePause")
-		.setPosition(x + (w - 8) / 2 + 8, y)
-		.setSize((w - 8) / 2, 24)
+		.setPosition(x, y)
+		.setSize(w, 48)
 		.setLabel("Pause / Run");
+
+	y += 58;
+	cp5.addButton("resetSimulation")
+		.setPosition(x, y)
+		.setSize(w, 24)
+		.setLabel("Reset")
+		.setColorBackground(color(90, 20, 20))
+		.setColorForeground(color(120, 30, 30))
+		.setColorActive(color(150, 40, 40));
+
+	y += 58;
+	cp5.addButton("loadImageFromDialog")
+		.setPosition(x, y)
+		.setSize(w, 24)
+		.setLabel("Load Image");
 
 	y += 34;
 	cp5.addButton("saveFullResPng")
 		.setPosition(x, y)
 		.setSize(w, 24)
-		.setLabel("Save PNG");
-
-	y += 34;
-	cp5.addButton("loadImageFromDialog")
-		.setPosition(x, y)
-		.setSize(w, 24)
-		.setLabel("Load Image");
+		.setLabel("SAVE IMAGE");
 }
 
 public void resetSimulation() {
