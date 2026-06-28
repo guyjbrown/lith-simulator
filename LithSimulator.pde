@@ -1,4 +1,5 @@
 import controlP5.*;
+import java.io.File;
 
 PImage sourceImage;
 
@@ -36,8 +37,6 @@ float lightHue = 33;
 float lightSaturation = 25;
 float noiseAmount = 0.0;
 float agitationBands = 0.0;
-
-int stepsPerFrame = 1;
 boolean paused = false;
 String saveStatus = "";
 int saveStatusFrames = 0;
@@ -49,33 +48,21 @@ void setup() {
     size(1200, 857);
 	pixelDensity(displayDensity());
 
-	// Load image.jpg from the sketch's data folder.
-	sourceImage = loadImage("image.jpg");
-
-	if (sourceImage == null) {
-		background(0);
-		fill(255, 0, 0);
-		text("Failed to load image.jpg", 20, 40);
-		noLoop();
-		return;
-	}
-
 	initializeControls();
-	initializeSimulation();
+	saveStatus = "Click Load Image to begin";
+	saveStatusFrames = 1000000;
 }
 
 void draw() {
-	if (sourceImage != null) {
+	background(0);
+	drawPanelBackground();
+
+	if (sourceImage != null && simView != null && devA != null && exhaustedA != null && developedA != null) {
 		if (!paused) {
-			for (int i = 0; i < stepsPerFrame; i++) {
-				stepSimulation();
-			}
+			stepSimulation();
 		}
 
 		renderSimulation();
-
-		background(0);
-		drawPanelBackground();
 
 		float viewportX = panelW + panelImageGutter;
 		float viewportW = width - viewportX;
@@ -88,6 +75,9 @@ void draw() {
 		float drawY = (viewportH - drawH) * 0.5;
 
 		image(simView, drawX, drawY, drawW, drawH);
+	} else {
+		fill(210);
+		text("No image loaded", panelW + panelImageGutter + 16, 32);
 	}
 }
 
@@ -200,17 +190,7 @@ void initializeControls() {
 		.setRange(0, 1)
 		.setValue(agitationBands)
 		.setLabel("agitation bands");
-	y += gap;
-
-	cp5.addSlider("stepsPerFrame")
-		.setPosition(x, y)
-		.setSize(w, h)
-		.setRange(1, 20)
-		.setNumberOfTickMarks(20)
-		.setDecimalPrecision(0)
-		.setValue(stepsPerFrame)
-		.setLabel("steps per frame");
-	y += gap + 10;
+	y += 10;
 
 	cp5.addButton("resetSimulation")
 		.setPosition(x, y)
@@ -227,9 +207,21 @@ void initializeControls() {
 		.setPosition(x, y)
 		.setSize(w, 24)
 		.setLabel("Save PNG");
+
+	y += 34;
+	cp5.addButton("loadImageFromDialog")
+		.setPosition(x, y)
+		.setSize(w, 24)
+		.setLabel("Load Image");
 }
 
 public void resetSimulation() {
+	if (sourceImage == null) {
+		saveStatus = "load an image first";
+		saveStatusFrames = 180;
+		return;
+	}
+
 	initializeSimulation();
 }
 
@@ -255,6 +247,31 @@ public void saveFullResPng() {
 
 	simView.save(sketchPath(fileName));
 	saveStatus = "saved " + fileName;
+	saveStatusFrames = 240;
+}
+
+public void loadImageFromDialog() {
+	selectInput("Select an image", "onImageFileSelected");
+}
+
+public void onImageFileSelected(File selection) {
+	if (selection == null) {
+		saveStatus = "image selection canceled";
+		saveStatusFrames = 180;
+		return;
+	}
+
+	PImage loaded = loadImage(selection.getAbsolutePath());
+	if (loaded == null || loaded.width <= 0 || loaded.height <= 0) {
+		saveStatus = "failed to load image";
+		saveStatusFrames = 240;
+		return;
+	}
+
+	sourceImage = loaded;
+	initializeSimulation();
+	paused = false;
+	saveStatus = "loaded " + selection.getName();
 	saveStatusFrames = 240;
 }
 
@@ -420,6 +437,10 @@ void swapBuffers() {
 }
 
 void renderSimulation() {
+	if (simView == null || developedA == null || exhaustedA == null) {
+		return;
+	}
+
 	simView.loadPixels();
 
 	// Light-tone anchor is controlled by hue/saturation sliders.
