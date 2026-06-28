@@ -38,6 +38,7 @@ float lightSaturation = 25;
 float noiseAmount = 0.0;
 float agitationBands = 0.0;
 boolean paused = false;
+long iterationCount = 0;
 String saveStatus = "";
 int saveStatusFrames = 0;
 
@@ -60,6 +61,7 @@ void draw() {
 	if (sourceImage != null && simView != null && devA != null && exhaustedA != null && developedA != null) {
 		if (!paused) {
 			stepSimulation();
+			iterationCount++;
 		}
 
 		renderSimulation();
@@ -100,6 +102,9 @@ void drawPanelBackground() {
 		text(saveStatus, panelPadding, height - 14);
 		saveStatusFrames--;
 	}
+
+	fill(210);
+	text("iteration: " + iterationCount, panelPadding, height - 32);
 }
 
 void initializeControls() {
@@ -283,6 +288,7 @@ void initializeSimulation() {
 	simW = sourceImage.width;
 	simH = sourceImage.height;
 	simSize = simW * simH;
+	iterationCount = 0;
 
 	toneSeed = new float[simSize];
 
