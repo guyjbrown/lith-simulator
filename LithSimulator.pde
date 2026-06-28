@@ -75,7 +75,7 @@ void draw() {
 		}
 
 		float viewportX = panelW + panelImageGutter;
-		float viewportW = width - viewportX;
+		float viewportW = width - viewportX - panelImageGutter;
 		float viewportH = height;
 
 		float scale = min(viewportW / frameView.width, viewportH / frameView.height);
