@@ -145,6 +145,7 @@ void initializeControls() {
 		.setRange(0, 1)
 		.setValue(seedRate)
 		.setLabel("seed rate");
+	styleSlider(cp5.getController("seedRate"));
 	y += gap;
 
 	cp5.addSlider("infectionRate")
@@ -153,6 +154,7 @@ void initializeControls() {
 		.setRange(0, 1)
 		.setValue(infectionRate)
 		.setLabel("infection rate");
+	styleSlider(cp5.getController("infectionRate"));
 	y += gap;
 
 	cp5.addSlider("developRate")
@@ -161,6 +163,7 @@ void initializeControls() {
 		.setRange(0, 1)
 		.setValue(developRate)
 		.setLabel("develop rate");
+	styleSlider(cp5.getController("developRate"));
 	y += gap;
 
 	cp5.addSlider("exhaustionRate")
@@ -169,6 +172,7 @@ void initializeControls() {
 		.setRange(0, 1)
 		.setValue(exhaustionRate)
 		.setLabel("exhaustion rate");
+	styleSlider(cp5.getController("exhaustionRate"));
 	y += gap;
 
 	cp5.addSlider("exhaustionRecovery")
@@ -177,6 +181,7 @@ void initializeControls() {
 		.setRange(0, 1)
 		.setValue(exhaustionRecovery)
 		.setLabel("recovery rate");
+	styleSlider(cp5.getController("exhaustionRecovery"));
 	y += gap;
 
 	cp5.addSlider("autocatalyticRate")
@@ -185,6 +190,7 @@ void initializeControls() {
 		.setRange(0, 1)
 		.setValue(autocatalyticRate)
 		.setLabel("autocatalytic rate");
+	styleSlider(cp5.getController("autocatalyticRate"));
 	y += gap;
 
 	cp5.addSlider("lightHue")
@@ -193,6 +199,7 @@ void initializeControls() {
 		.setRange(0, 360)
 		.setValue(lightHue)
 		.setLabel("light hue");
+	styleSlider(cp5.getController("lightHue"));
 	y += gap;
 
 	cp5.addSlider("lightSaturation")
@@ -201,6 +208,7 @@ void initializeControls() {
 		.setRange(0, 100)
 		.setValue(lightSaturation)
 		.setLabel("light saturation");
+	styleSlider(cp5.getController("lightSaturation"));
 	y += gap;
 
 	cp5.addSlider("noiseAmount")
@@ -209,6 +217,7 @@ void initializeControls() {
 		.setRange(0, 0.5)
 		.setValue(noiseAmount)
 		.setLabel("noise amount");
+	styleSlider(cp5.getController("noiseAmount"));
 	y += gap;
 
 	cp5.addSlider("agitationBands")
@@ -217,12 +226,14 @@ void initializeControls() {
 		.setRange(0, 1)
 		.setValue(agitationBands)
 		.setLabel("agitation bands");
+	styleSlider(cp5.getController("agitationBands"));
 	y += gap;
 
 	cp5.addButton("togglePause")
 		.setPosition(x, y)
 		.setSize(w, 48)
 		.setLabel("Pause / Run");
+	styleRunButton(cp5.getController("togglePause"));
 	updateRunButtonState();
 
 	y += 58;
@@ -230,33 +241,37 @@ void initializeControls() {
 		.setPosition(x, y)
 		.setSize(w, 24)
 		.setLabel("NUDGE");
+	styleStandardButton(cp5.getController("nudgeSimulation"));
 
 	y += 34;
 	cp5.addButton("resetSimulation")
 		.setPosition(x, y)
 		.setSize(w, 24)
 		.setLabel("Restart")
-		.setColorBackground(color(90, 20, 20))
-		.setColorForeground(color(120, 30, 30))
-		.setColorActive(color(150, 40, 40));
+		.setColorBackground(color(145, 85, 20))
+		.setColorForeground(color(175, 105, 30))
+		.setColorActive(color(200, 130, 45));
 
 	y += 44;
-		cp5.addButton("resetControls")
+	cp5.addButton("resetControls")
 		.setPosition(x, y)
 		.setSize(w, 24)
 		.setLabel("Defaults");
+	styleStandardButton(cp5.getController("resetControls"));
 
 	y += 44;
 	cp5.addButton("loadImageFromDialog")
 		.setPosition(x, y)
 		.setSize(w, 24)
 		.setLabel("Load Image");
+	styleStandardButton(cp5.getController("loadImageFromDialog"));
 
 	y += 34;
 	cp5.addButton("saveFullResPng")
 		.setPosition(x, y)
 		.setSize(w, 24)
 		.setLabel("SAVE IMAGE");
+	styleStandardButton(cp5.getController("saveFullResPng"));
 }
 
 public void resetSimulation() {
@@ -307,6 +322,36 @@ void setControlValue(String controlName, float value) {
 	}
 }
 
+void styleSlider(Controller<?> slider) {
+	if (slider == null) {
+		return;
+	}
+
+	slider.setColorBackground(color(50,50,50));
+	slider.setColorForeground(color(145, 85, 20));
+	slider.setColorActive(color(175, 105, 30));
+}
+
+void styleStandardButton(Controller<?> button) {
+	if (button == null) {
+		return;
+	}
+
+	button.setColorBackground(color(50));
+	button.setColorForeground(color(70));
+	button.setColorActive(color(90));
+}
+
+void styleRunButton(Controller<?> button) {
+	if (button == null) {
+		return;
+	}
+
+	button.setColorBackground(color(50, 90, 50));
+	button.setColorForeground(color(70, 120, 70));
+	button.setColorActive(color(90, 150, 90));
+}
+
 void updateRunButtonState() {
 	if (cp5 == null) {
 		return;
@@ -317,15 +362,7 @@ void updateRunButtonState() {
 		return;
 	}
 
-	if (paused) {
-		runButton.setColorBackground(color(52, 92, 52));
-		runButton.setColorForeground(color(72, 122, 72));
-		runButton.setColorActive(color(92, 152, 92));
-	} else {
-		runButton.setColorBackground(color(70));
-		runButton.setColorForeground(color(95));
-		runButton.setColorActive(color(120));
-	}
+	styleRunButton(runButton);
 }
 
 public void togglePause() {
