@@ -223,8 +223,15 @@ void initializeControls() {
 		.setPosition(x, y)
 		.setSize(w, 48)
 		.setLabel("Pause / Run");
+	updateRunButtonState();
 
 	y += 58;
+	cp5.addButton("nudgeSimulation")
+		.setPosition(x, y)
+		.setSize(w, 24)
+		.setLabel("NUDGE");
+
+	y += 34;
 	cp5.addButton("resetSimulation")
 		.setPosition(x, y)
 		.setSize(w, 24)
@@ -300,8 +307,40 @@ void setControlValue(String controlName, float value) {
 	}
 }
 
+void updateRunButtonState() {
+	if (cp5 == null) {
+		return;
+	}
+
+	Controller<?> runButton = cp5.getController("togglePause");
+	if (runButton == null) {
+		return;
+	}
+
+	if (paused) {
+		runButton.setColorBackground(color(52, 92, 52));
+		runButton.setColorForeground(color(72, 122, 72));
+		runButton.setColorActive(color(92, 152, 92));
+	} else {
+		runButton.setColorBackground(color(70));
+		runButton.setColorForeground(color(95));
+		runButton.setColorActive(color(120));
+	}
+}
+
 public void togglePause() {
 	paused = !paused;
+	updateRunButtonState();
+}
+
+public void nudgeSimulation() {
+	if (!paused || !simulationReady || sourceImage == null || devA == null || exhaustedA == null || developedA == null
+		|| toneSeed == null || toneNoise == null || bandProfile == null) {
+		return;
+	}
+
+	stepSimulation();
+	iterationCount++;
 }
 
 public void saveFullResPng() {
@@ -353,6 +392,7 @@ public void onImageFileSelected(File selection) {
 	sourceImage = loaded;
 	initializeSimulation();
 	paused = false;
+	updateRunButtonState();
 	saveStatus = "loaded " + selection.getName();
 	saveStatusFrames = 240;
 }
