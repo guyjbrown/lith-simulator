@@ -94,7 +94,7 @@ void drawPanelBackground() {
 
 	String status = paused ? "paused" : "running";
 	fill(232);
-	text("lith infection sim", panelPadding, 24);
+	text("LITH SIMULATION", panelPadding, 24);
 	text("status: " + status, panelPadding, 42);
 
 	if (saveStatusFrames > 0) {
@@ -239,23 +239,29 @@ public void togglePause() {
 }
 
 public void saveFullResPng() {
+	selectOutput("Save image as", "onSaveFileSelected");
+}
+
+public void onSaveFileSelected(File selection) {
+	if (selection == null) {
+		saveStatus = "save canceled";
+		saveStatusFrames = 180;
+		return;
+	}
+
 	if (simView == null) {
 		saveStatus = "save failed: no image";
 		saveStatusFrames = 180;
 		return;
 	}
 
-	String stamp = year()
-		+ nf(month(), 2)
-		+ nf(day(), 2)
-		+ "_"
-		+ nf(hour(), 2)
-		+ nf(minute(), 2)
-		+ nf(second(), 2);
-	String fileName = "lith_" + stamp + ".png";
+	String filePath = selection.getAbsolutePath();
+	if (!filePath.toLowerCase().endsWith(".tif")) {
+		filePath += ".tif";
+	}
 
-	simView.save(sketchPath(fileName));
-	saveStatus = "saved " + fileName;
+	simView.save(filePath);
+	saveStatus = "saved " + selection.getName();
 	saveStatusFrames = 240;
 }
 
