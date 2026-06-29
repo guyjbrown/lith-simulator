@@ -6,7 +6,7 @@ PImage sourceImage;
 PImage simView;
 ControlP5 cp5;
 
-int panelW = 280;
+int panelW = 320;
 int panelPadding = 16;
 int panelImageGutter = 18;
 
@@ -36,9 +36,11 @@ final float DEFAULT_EXHAUSTION_RECOVERY = 0.012;
 final float DEFAULT_AUTOCATALYTIC_RATE = 0.150;
 final float DEFAULT_LIGHT_HUE = 33;
 final float DEFAULT_LIGHT_SATURATION = 25;
-final float DEFAULT_NOISE_AMOUNT = 0.0;
+final float DEFAULT_NOISE_AMOUNT = 0.1;
 final float DEFAULT_VERTICAL_BANDING = 0.0;
 final float DEFAULT_HORIZONTAL_BANDING = 0.0;
+final float RATE_SLIDER_MIN = 0.001;
+final float RATE_SLIDER_MAX = 1.0;
 
 float seedRate = DEFAULT_SEED_RATE;
 float infectionRate = DEFAULT_INFECTION_RATE;
@@ -53,6 +55,7 @@ float verticalBanding = DEFAULT_VERTICAL_BANDING;
 float horizontalBanding = DEFAULT_HORIZONTAL_BANDING;
 boolean paused = false;
 boolean simulationReady = false;
+boolean suppressRateSliderCallbacks = false;
 long iterationCount = 0;
 String saveStatus = "";
 int saveStatusFrames = 0;
@@ -61,7 +64,7 @@ int saveStatusFrames = 0;
 
 void setup() {
 
-    size(1300, 857);
+    size(1400, 840);
 	pixelDensity(displayDensity());
 
 	initializeControls();
@@ -135,67 +138,74 @@ void drawPanelBackground() {
 }
 
 void initializeControls() {
+	suppressRateSliderCallbacks = true;
 	cp5 = new ControlP5(this);
 
 	int x = panelPadding;
 	int y = 58;
-	int fullW = panelW - panelPadding * 2;
+	int fullW = 70+panelW - panelPadding * 2;
 	int w = fullW / 2;
 	int h = 18;
 	int gap = 34;
 
-	cp5.addSlider("seedRate")
+	cp5.addSlider("seedRateSlider")
 		.setPosition(x, y)
 		.setSize(w, h)
 		.setRange(0, 1)
-		.setValue(seedRate)
+		.setValue(rateToSliderPosition(seedRate))
 		.setLabel("seed rate");
-	styleSlider(cp5.getController("seedRate"));
+	styleSlider(cp5.getController("seedRateSlider"));
+	updateLogRateValueLabel("seedRateSlider", seedRate);
 	y += gap;
 
-	cp5.addSlider("infectionRate")
+	cp5.addSlider("infectionRateSlider")
 		.setPosition(x, y)
 		.setSize(w, h)
 		.setRange(0, 1)
-		.setValue(infectionRate)
+		.setValue(rateToSliderPosition(infectionRate))
 		.setLabel("infection rate");
-	styleSlider(cp5.getController("infectionRate"));
+	styleSlider(cp5.getController("infectionRateSlider"));
+	updateLogRateValueLabel("infectionRateSlider", infectionRate);
 	y += gap;
 
-	cp5.addSlider("developRate")
+	cp5.addSlider("developRateSlider")
 		.setPosition(x, y)
 		.setSize(w, h)
 		.setRange(0, 1)
-		.setValue(developRate)
+		.setValue(rateToSliderPosition(developRate))
 		.setLabel("develop rate");
-	styleSlider(cp5.getController("developRate"));
+	styleSlider(cp5.getController("developRateSlider"));
+	updateLogRateValueLabel("developRateSlider", developRate);
 	y += gap;
 
-	cp5.addSlider("exhaustionRate")
+	cp5.addSlider("exhaustionRateSlider")
 		.setPosition(x, y)
 		.setSize(w, h)
 		.setRange(0, 1)
-		.setValue(exhaustionRate)
+		.setValue(rateToSliderPosition(exhaustionRate))
 		.setLabel("exhaustion rate");
-	styleSlider(cp5.getController("exhaustionRate"));
+	styleSlider(cp5.getController("exhaustionRateSlider"));
+	updateLogRateValueLabel("exhaustionRateSlider", exhaustionRate);
 	y += gap;
 
-	cp5.addSlider("exhaustionRecovery")
+	cp5.addSlider("exhaustionRecoverySlider")
 		.setPosition(x, y)
 		.setSize(w, h)
 		.setRange(0, 1)
-		.setValue(exhaustionRecovery)
+		.setValue(rateToSliderPosition(exhaustionRecovery))
 		.setLabel("recovery rate");
-	styleSlider(cp5.getController("exhaustionRecovery"));
+	styleSlider(cp5.getController("exhaustionRecoverySlider"));
+	updateLogRateValueLabel("exhaustionRecoverySlider", exhaustionRecovery);
 	y += gap;
 
-	cp5.addSlider("autocatalyticRate")
+	cp5.addSlider("autocatalyticRateSlider")
 		.setPosition(x, y)
 		.setSize(w, h)
 		.setRange(0, 1)
-		.setValue(autocatalyticRate)
+		.setValue(rateToSliderPosition(autocatalyticRate))
 		.setLabel("autocatalytic rate");
-	styleSlider(cp5.getController("autocatalyticRate"));
+	styleSlider(cp5.getController("autocatalyticRateSlider"));
+	updateLogRateValueLabel("autocatalyticRateSlider", autocatalyticRate);
 	y += gap;
 
 	cp5.addSlider("lightHue")
@@ -286,6 +296,8 @@ void initializeControls() {
 		.setSize(w, 24)
 		.setLabel("SAVE IMAGE");
 	styleStandardButton(cp5.getController("saveFullResPng"));
+
+	suppressRateSliderCallbacks = false;
 }
 
 public void resetSimulation() {
@@ -311,12 +323,12 @@ public void resetControls() {
 	verticalBanding = DEFAULT_VERTICAL_BANDING;
 	horizontalBanding = DEFAULT_HORIZONTAL_BANDING;
 
-	setControlValue("seedRate", seedRate);
-	setControlValue("infectionRate", infectionRate);
-	setControlValue("developRate", developRate);
-	setControlValue("exhaustionRate", exhaustionRate);
-	setControlValue("exhaustionRecovery", exhaustionRecovery);
-	setControlValue("autocatalyticRate", autocatalyticRate);
+	setLogRateControlValue("seedRateSlider", seedRate);
+	setLogRateControlValue("infectionRateSlider", infectionRate);
+	setLogRateControlValue("developRateSlider", developRate);
+	setLogRateControlValue("exhaustionRateSlider", exhaustionRate);
+	setLogRateControlValue("exhaustionRecoverySlider", exhaustionRecovery);
+	setLogRateControlValue("autocatalyticRateSlider", autocatalyticRate);
 	setControlValue("lightHue", lightHue);
 	setControlValue("lightSaturation", lightSaturation);
 	setControlValue("noiseAmount", noiseAmount);
@@ -336,6 +348,84 @@ void setControlValue(String controlName, float value) {
 	if (control != null) {
 		control.setValue(value);
 	}
+}
+
+float rateToSliderPosition(float rate) {
+	float safeRate = constrain(rate, RATE_SLIDER_MIN, RATE_SLIDER_MAX);
+	return log(safeRate / RATE_SLIDER_MIN) / log(RATE_SLIDER_MAX / RATE_SLIDER_MIN);
+}
+
+float sliderPositionToRate(float position) {
+	float normalizedPosition = constrain(position, 0, 1);
+	return RATE_SLIDER_MIN * pow(RATE_SLIDER_MAX / RATE_SLIDER_MIN, normalizedPosition);
+}
+
+void setLogRateControlValue(String controlName, float rate) {
+	boolean wasSuppressed = suppressRateSliderCallbacks;
+	suppressRateSliderCallbacks = true;
+	setControlValue(controlName, rateToSliderPosition(rate));
+	suppressRateSliderCallbacks = wasSuppressed;
+	updateLogRateValueLabel(controlName, rate);
+}
+
+void updateLogRateValueLabel(String controlName, float rate) {
+	if (cp5 == null) {
+		return;
+	}
+
+	Controller<?> control = cp5.getController(controlName);
+	if (control != null) {
+		int decimalPlaces = rate < 0.01 ? 4 : 3;
+		control.setValueLabel(nf(rate, 1, decimalPlaces));
+	}
+}
+
+public void seedRateSlider(float position) {
+	if (suppressRateSliderCallbacks) {
+		return;
+	}
+	seedRate = sliderPositionToRate(position);
+	updateLogRateValueLabel("seedRateSlider", seedRate);
+}
+
+public void infectionRateSlider(float position) {
+	if (suppressRateSliderCallbacks) {
+		return;
+	}
+	infectionRate = sliderPositionToRate(position);
+	updateLogRateValueLabel("infectionRateSlider", infectionRate);
+}
+
+public void developRateSlider(float position) {
+	if (suppressRateSliderCallbacks) {
+		return;
+	}
+	developRate = sliderPositionToRate(position);
+	updateLogRateValueLabel("developRateSlider", developRate);
+}
+
+public void exhaustionRateSlider(float position) {
+	if (suppressRateSliderCallbacks) {
+		return;
+	}
+	exhaustionRate = sliderPositionToRate(position);
+	updateLogRateValueLabel("exhaustionRateSlider", exhaustionRate);
+}
+
+public void exhaustionRecoverySlider(float position) {
+	if (suppressRateSliderCallbacks) {
+		return;
+	}
+	exhaustionRecovery = sliderPositionToRate(position);
+	updateLogRateValueLabel("exhaustionRecoverySlider", exhaustionRecovery);
+}
+
+public void autocatalyticRateSlider(float position) {
+	if (suppressRateSliderCallbacks) {
+		return;
+	}
+	autocatalyticRate = sliderPositionToRate(position);
+	updateLogRateValueLabel("autocatalyticRateSlider", autocatalyticRate);
 }
 
 void styleSlider(Controller<?> slider) {

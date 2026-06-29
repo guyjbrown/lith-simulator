@@ -21,37 +21,39 @@ The rendered output maps density from white -> sepia -> black.
 
 All of these are exposed as sliders in the UI.
 
-### seedRate (0..1)
+The six simulation-rate sliders use logarithmic scaling from `0.001` to `1`. Each third of the slider covers one decade: `0.001..0.01`, `0.01..0.1`, and `0.1..1`.
+
+### seedRate (0.001..1)
 Base spontaneous activation rate.
 
 - Higher values cause more development to start without needing nearby developed neighbors.
 - Strongest effect in darker areas (higher tone seed).
 
-### infectionRate (0..1)
+### infectionRate (0.001..1)
 Neighbor-driven spread strength.
 
 - Controls how much development propagates from nearby high-`dev` pixels.
 - Higher values produce faster lateral spread and stronger clustering.
 
-### developRate (0..1)
+### developRate (0.001..1)
 Conversion rate from active developer into final developed density.
 
 - Higher values darken the image more quickly.
 - Increases the speed at which pixels approach fully developed black.
 
-### exhaustionRate (0..1)
+### exhaustionRate (0.001..1)
 How quickly activity consumes fresh capacity and raises exhaustion.
 
 - Higher values suppress sustained activity sooner.
 - Can prevent runaway spread by exhausting active regions faster.
 
-### exhaustionRecovery (0..1)
+### exhaustionRecovery (0.001..1)
 Recovery rate of exhausted pixels.
 
 - Higher values let exhausted pixels become active again sooner.
 - Supports repeated/local reactivation over time.
 
-### autocatalyticRate (0..1)
+### autocatalyticRate (0.001..1)
 Self-reinforcement from already developed density.
 
 - Higher values make developed regions accelerate their own continued growth.
