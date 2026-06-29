@@ -16,7 +16,8 @@ int simSize;
 
 float[] toneSeed;
 float[] toneNoise;
-float[] bandProfile;
+float[] verticalBandProfile;
+float[] horizontalBandProfile;
 
 float[] devA;
 float[] devB;
@@ -36,7 +37,8 @@ final float DEFAULT_AUTOCATALYTIC_RATE = 0.150;
 final float DEFAULT_LIGHT_HUE = 33;
 final float DEFAULT_LIGHT_SATURATION = 25;
 final float DEFAULT_NOISE_AMOUNT = 0.0;
-final float DEFAULT_AGITATION_BANDS = 0.0;
+final float DEFAULT_VERTICAL_BANDING = 0.0;
+final float DEFAULT_HORIZONTAL_BANDING = 0.0;
 
 float seedRate = DEFAULT_SEED_RATE;
 float infectionRate = DEFAULT_INFECTION_RATE;
@@ -47,7 +49,8 @@ float autocatalyticRate = DEFAULT_AUTOCATALYTIC_RATE;
 float lightHue = DEFAULT_LIGHT_HUE;
 float lightSaturation = DEFAULT_LIGHT_SATURATION;
 float noiseAmount = DEFAULT_NOISE_AMOUNT;
-float agitationBands = DEFAULT_AGITATION_BANDS;
+float verticalBanding = DEFAULT_VERTICAL_BANDING;
+float horizontalBanding = DEFAULT_HORIZONTAL_BANDING;
 boolean paused = false;
 boolean simulationReady = false;
 long iterationCount = 0;
@@ -71,7 +74,7 @@ void draw() {
 	drawPanelBackground();
 
 	if (simulationReady && sourceImage != null && devA != null && exhaustedA != null && developedA != null
-		&& toneSeed != null && toneNoise != null && bandProfile != null) {
+		&& toneSeed != null && toneNoise != null && verticalBandProfile != null && horizontalBandProfile != null) {
 		if (!paused) {
 			stepSimulation();
 			iterationCount++;
@@ -222,13 +225,22 @@ void initializeControls() {
 	styleSlider(cp5.getController("noiseAmount"));
 	y += gap;
 
-	cp5.addSlider("agitationBands")
+	cp5.addSlider("verticalBanding")
 		.setPosition(x, y)
 		.setSize(w, h)
 		.setRange(0, 1)
-		.setValue(agitationBands)
-		.setLabel("agitation bands");
-	styleSlider(cp5.getController("agitationBands"));
+		.setValue(verticalBanding)
+		.setLabel("VERTICAL BANDING");
+	styleSlider(cp5.getController("verticalBanding"));
+	y += gap;
+
+	cp5.addSlider("horizontalBanding")
+		.setPosition(x, y)
+		.setSize(w, h)
+		.setRange(0, 1)
+		.setValue(horizontalBanding)
+		.setLabel("HORIZONTAL BANDING");
+	styleSlider(cp5.getController("horizontalBanding"));
 	y += gap;
 
 	cp5.addButton("togglePause")
@@ -296,7 +308,8 @@ public void resetControls() {
 	lightHue = DEFAULT_LIGHT_HUE;
 	lightSaturation = DEFAULT_LIGHT_SATURATION;
 	noiseAmount = DEFAULT_NOISE_AMOUNT;
-	agitationBands = DEFAULT_AGITATION_BANDS;
+	verticalBanding = DEFAULT_VERTICAL_BANDING;
+	horizontalBanding = DEFAULT_HORIZONTAL_BANDING;
 
 	setControlValue("seedRate", seedRate);
 	setControlValue("infectionRate", infectionRate);
@@ -307,7 +320,8 @@ public void resetControls() {
 	setControlValue("lightHue", lightHue);
 	setControlValue("lightSaturation", lightSaturation);
 	setControlValue("noiseAmount", noiseAmount);
-	setControlValue("agitationBands", agitationBands);
+	setControlValue("verticalBanding", verticalBanding);
+	setControlValue("horizontalBanding", horizontalBanding);
 
 	saveStatus = "controls reset";
 	saveStatusFrames = 180;
@@ -374,7 +388,7 @@ public void togglePause() {
 
 public void nudgeSimulation() {
 	if (!paused || !simulationReady || sourceImage == null || devA == null || exhaustedA == null || developedA == null
-		|| toneSeed == null || toneNoise == null || bandProfile == null) {
+		|| toneSeed == null || toneNoise == null || verticalBandProfile == null || horizontalBandProfile == null) {
 		return;
 	}
 
@@ -441,7 +455,8 @@ void clearSimulationBuffers() {
 	simView = null;
 	toneSeed = null;
 	toneNoise = null;
-	bandProfile = null;
+	verticalBandProfile = null;
+	horizontalBandProfile = null;
 	devA = null;
 	devB = null;
 	exhaustedA = null;
@@ -472,10 +487,12 @@ void initializeSimulation() {
 	developedA = new float[simSize];
 	developedB = new float[simSize];
 	toneNoise = new float[simSize];
-	bandProfile = new float[simW];
+	verticalBandProfile = new float[simW];
+	horizontalBandProfile = new float[simH];
 
 	loadToneSeed();
-	buildBandProfile();
+	buildBandProfile(verticalBandProfile);
+	buildBandProfile(horizontalBandProfile);
 
 	simView = createImage(simW, simH, RGB);
 	simulationReady = true;
@@ -504,35 +521,35 @@ void loadToneSeed() {
 	}
 }
 
-void buildBandProfile() {
-	for (int x = 0; x < simW; x++) {
-		bandProfile[x] = random(-1.0, 1.0);
+void buildBandProfile(float[] profile) {
+	for (int i = 0; i < profile.length; i++) {
+		profile[i] = random(-1.0, 1.0);
 	}
 
-	float[] temp = new float[simW];
+	float[] temp = new float[profile.length];
 	for (int pass = 0; pass < 6; pass++) {
-		for (int x = 0; x < simW; x++) {
-			float c = bandProfile[x] * 0.5;
-			float l = bandProfile[max(0, x - 1)] * 0.25;
-			float r = bandProfile[min(simW - 1, x + 1)] * 0.25;
-			temp[x] = c + l + r;
+		for (int i = 0; i < profile.length; i++) {
+			float c = profile[i] * 0.5;
+			float l = profile[max(0, i - 1)] * 0.25;
+			float r = profile[min(profile.length - 1, i + 1)] * 0.25;
+			temp[i] = c + l + r;
 		}
 
-		arrayCopy(temp, bandProfile);
+		arrayCopy(temp, profile);
 	}
 
 	float maxAbs = 0.0001;
-	for (int x = 0; x < simW; x++) {
-		maxAbs = max(maxAbs, abs(bandProfile[x]));
+	for (int i = 0; i < profile.length; i++) {
+		maxAbs = max(maxAbs, abs(profile[i]));
 	}
-	for (int x = 0; x < simW; x++) {
-		bandProfile[x] /= maxAbs;
+	for (int i = 0; i < profile.length; i++) {
+		profile[i] /= maxAbs;
 	}
 }
 
 void stepSimulation() {
 	if (devA == null || devB == null || exhaustedA == null || exhaustedB == null || developedA == null || developedB == null
-		|| toneSeed == null || toneNoise == null || bandProfile == null) {
+		|| toneSeed == null || toneNoise == null || verticalBandProfile == null || horizontalBandProfile == null) {
 		return;
 	}
 
@@ -543,8 +560,9 @@ void stepSimulation() {
 			float localDev = devA[idx];
 			float localExhausted = exhaustedA[idx];
 			float localDeveloped = developedA[idx];
-			float band = bandProfile[x] * agitationBands;
-			float localNoiseAmount = max(0, noiseAmount * (1.0 + band));
+			float verticalBand = verticalBandProfile[x] * verticalBanding;
+			float horizontalBand = horizontalBandProfile[y] * horizontalBanding;
+			float localNoiseAmount = noiseAmount * (1.0 + verticalBand) * (1.0 + horizontalBand);
 			float t = constrain(toneSeed[idx] + toneNoise[idx] * localNoiseAmount, 0, 1);
 
 			float neighborDev = neighborhoodDeveloper(x, y);

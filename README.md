@@ -75,11 +75,17 @@ Amount of static per-pixel random tone perturbation.
 - Adds grain/texture to tone seed before each step.
 - Higher values create more stochastic variation in where development starts/spreads.
 
-### agitationBands (0..1)
-Horizontal band modulation strength applied to `noiseAmount`.
+### verticalBanding (0..1)
+Vertical band modulation strength applied to `noiseAmount`.
 
 - Uses a smoothed random profile across x.
-- Higher values create stronger column-wise differences in effective noise, producing subtle to strong banding behavior.
+- Higher values create stronger column-wise differences in effective noise, producing subtle to strong vertical bands.
+
+### horizontalBanding (0..1)
+Horizontal band modulation strength applied to `noiseAmount`.
+
+- Uses a smoothed random profile across y.
+- Higher values create stronger row-wise differences in effective noise, producing subtle to strong horizontal bands.
 
 ## Equations
 
@@ -87,8 +93,9 @@ For each pixel index `i` at position `(x, y)`, one simulation step computes:
 
 Input tone and modulation:
 
-- `band = bandProfile[x] * agitationBands`
-- `localNoiseAmount = max(0, noiseAmount * (1 + band))`
+- `verticalBand = verticalBandProfile[x] * verticalBanding`
+- `horizontalBand = horizontalBandProfile[y] * horizontalBanding`
+- `localNoiseAmount = noiseAmount * (1 + verticalBand) * (1 + horizontalBand)`
 - `t = clamp(toneSeed[i] + toneNoise[i] * localNoiseAmount, 0, 1)`
 
 Neighborhood activity:
@@ -155,7 +162,8 @@ Writes the current rendered image to the sketch folder in TIFF format as:
 - More self-darkening: increase `autocatalyticRate` and `developRate`.
 - More restrained growth: increase `exhaustionRate` or lower `seedRate`.
 - More texture/grain: increase `noiseAmount`.
-- Add striping/banding character: increase `agitationBands`.
+- Add vertical striping: increase `verticalBanding`.
+- Add horizontal striping: increase `horizontalBanding`.
 
 ## Requirements
 
