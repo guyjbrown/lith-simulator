@@ -225,6 +225,9 @@ void initializeControls() {
 		.setSize(w, h)
 		.setRange(0, 360)
 		.setValue(lightHue)
+		.setNumberOfTickMarks(361)
+		.showTickMarks(false)
+		.setDecimalPrecision(0)
 		.setLabel("light hue");
 	styleSlider(cp5.getController("lightHue"));
 	y += gap;
@@ -234,6 +237,9 @@ void initializeControls() {
 		.setSize(w, h)
 		.setRange(0, 100)
 		.setValue(lightSaturation)
+		.setNumberOfTickMarks(101)
+		.showTickMarks(false)
+		.setDecimalPrecision(0)
 		.setLabel("light saturation");
 	styleSlider(cp5.getController("lightSaturation"));
 	y += gap;

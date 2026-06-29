@@ -27,6 +27,62 @@
       "exhaustionRate": 0.054999999701976776,
       "lightHue": 219.21786499023438,
       "verticalBanding": 0
+    },
+    {
+      "developRate": 0.05751437693834305,
+      "exhaustionRecovery": 0.012000000104308128,
+      "autocatalyticRate": 0.0016514944145455956,
+      "infectionRate": 0.002524844603613019,
+      "horizontalBanding": 0,
+      "name": "high key",
+      "noiseAmount": 0.10000000149011612,
+      "lightSaturation": 25,
+      "seedRate": 0.018071042373776436,
+      "exhaustionRate": 0.03482566028833389,
+      "lightHue": 33,
+      "verticalBanding": 0
+    },
+    {
+      "developRate": 0.05751437693834305,
+      "exhaustionRecovery": 0.012000000104308128,
+      "autocatalyticRate": 0.0016514944145455956,
+      "infectionRate": 0.002524844603613019,
+      "horizontalBanding": 0,
+      "name": "cool blue",
+      "noiseAmount": 0.10000000149011612,
+      "lightSaturation": 10,
+      "seedRate": 0.018071042373776436,
+      "exhaustionRate": 0.03482566028833389,
+      "lightHue": 220.99998474121094,
+      "verticalBanding": 0
+    },
+    {
+      "developRate": 0.05751437693834305,
+      "exhaustionRecovery": 0.012000000104308128,
+      "autocatalyticRate": 0.0016514944145455956,
+      "infectionRate": 0.002524844603613019,
+      "horizontalBanding": 0,
+      "name": "corbijn blue",
+      "noiseAmount": 0.10000000149011612,
+      "lightSaturation": 4,
+      "seedRate": 0.018071042373776436,
+      "exhaustionRate": 0.03482566028833389,
+      "lightHue": 219,
+      "verticalBanding": 0
+    },
+    {
+      "developRate": 0.05751437693834305,
+      "exhaustionRecovery": 0.012000000104308128,
+      "autocatalyticRate": 0.0010802382603287697,
+      "infectionRate": 0.002524844603613019,
+      "horizontalBanding": 0,
+      "name": "jodhpur dog",
+      "noiseAmount": 0.10000000149011612,
+      "lightSaturation": 25,
+      "seedRate": 0.018071042373776436,
+      "exhaustionRate": 0.10664314776659012,
+      "lightHue": 33,
+      "verticalBanding": 0
     }
   ],
   "version": 1
