@@ -1,5 +1,6 @@
 import controlP5.*;
 import java.io.File;
+import javax.swing.JOptionPane;
 
 PImage sourceImage;
 
@@ -41,6 +42,7 @@ final float DEFAULT_VERTICAL_BANDING = 0.0;
 final float DEFAULT_HORIZONTAL_BANDING = 0.0;
 final float RATE_SLIDER_MIN = 0.001;
 final float RATE_SLIDER_MAX = 1.0;
+final String PRESETS_FILE_NAME = "presets.json";
 
 float seedRate = DEFAULT_SEED_RATE;
 float infectionRate = DEFAULT_INFECTION_RATE;
@@ -56,6 +58,8 @@ float horizontalBanding = DEFAULT_HORIZONTAL_BANDING;
 boolean paused = false;
 boolean simulationReady = false;
 boolean suppressRateSliderCallbacks = false;
+boolean suppressPresetSelection = false;
+JSONArray presets = new JSONArray();
 long iterationCount = 0;
 String saveStatus = "";
 int saveStatusFrames = 0;
@@ -64,9 +68,10 @@ int saveStatusFrames = 0;
 
 void setup() {
 
-    size(1400, 840);
+	size(1400, 840);
 	pixelDensity(displayDensity());
 
+	loadPresets();
 	initializeControls();
 	saveStatus = "Click Load Image to begin";
 	saveStatusFrames = 1000000;
@@ -139,6 +144,7 @@ void drawPanelBackground() {
 
 void initializeControls() {
 	suppressRateSliderCallbacks = true;
+	suppressPresetSelection = true;
 	cp5 = new ControlP5(this);
 
 	int x = panelPadding;
@@ -147,6 +153,12 @@ void initializeControls() {
 	int w = fullW / 2;
 	int h = 18;
 	int gap = 34;
+	int actionW = panelW - panelPadding * 2;
+	int buttonGap = 16;
+	int buttonW = (actionW - buttonGap) / 2;
+	int buttonH = 26;
+	int buttonRowGap = 42;
+	int secondButtonX = x + buttonW + buttonGap;
 
 	cp5.addSlider("seedRateSlider")
 		.setPosition(x, y)
@@ -255,49 +267,67 @@ void initializeControls() {
 
 	cp5.addButton("togglePause")
 		.setPosition(x, y)
-		.setSize(w, 48)
+		.setSize(buttonW, buttonH)
 		.setLabel("Pause / Run");
 	styleRunButton(cp5.getController("togglePause"));
 	updateRunButtonState();
 
-	y += 58;
 	cp5.addButton("nudgeSimulation")
-		.setPosition(x, y)
-		.setSize(w, 24)
+		.setPosition(secondButtonX, y)
+		.setSize(buttonW, buttonH)
 		.setLabel("NUDGE");
 	styleStandardButton(cp5.getController("nudgeSimulation"));
 
-	y += 34;
+	y += buttonRowGap;
 	cp5.addButton("resetSimulation")
 		.setPosition(x, y)
-		.setSize(w, 24)
+		.setSize(buttonW, buttonH)
 		.setLabel("Restart")
 		.setColorBackground(color(145, 85, 20))
 		.setColorForeground(color(175, 105, 30))
 		.setColorActive(color(200, 130, 45));
 
-	y += 44;
 	cp5.addButton("resetControls")
-		.setPosition(x, y)
-		.setSize(w, 24)
+		.setPosition(secondButtonX, y)
+		.setSize(buttonW, buttonH)
 		.setLabel("Defaults");
 	styleStandardButton(cp5.getController("resetControls"));
 
-	y += 44;
+	y += buttonRowGap;
 	cp5.addButton("loadImageFromDialog")
 		.setPosition(x, y)
-		.setSize(w, 24)
+		.setSize(buttonW, buttonH)
 		.setLabel("Load Image");
 	styleStandardButton(cp5.getController("loadImageFromDialog"));
 
-	y += 34;
 	cp5.addButton("saveFullResPng")
-		.setPosition(x, y)
-		.setSize(w, 24)
+		.setPosition(secondButtonX, y)
+		.setSize(buttonW, buttonH)
 		.setLabel("SAVE IMAGE");
 	styleStandardButton(cp5.getController("saveFullResPng"));
 
+	y += buttonRowGap;
+	cp5.addButton("saveAsPreset")
+		.setPosition(x, y)
+		.setSize(actionW, buttonH)
+		.setLabel("SAVE AS PRESET");
+	styleStandardButton(cp5.getController("saveAsPreset"));
+
+	y += buttonRowGap;
+	ScrollableList presetMenu = cp5.addScrollableList("presetMenu")
+		.setPosition(x, y)
+		.setSize(actionW, 116)
+		.setBarHeight(24)
+		.setItemHeight(22)
+		.setType(ControlP5.DROPDOWN)
+		.setLabel("PRESETS")
+		.close();
+	presetMenu.setBackgroundColor(color(20, 24, 28));
+	styleStandardButton(presetMenu);
+	refreshPresetMenu();
+
 	suppressRateSliderCallbacks = false;
+	suppressPresetSelection = false;
 }
 
 public void resetSimulation() {
@@ -323,6 +353,13 @@ public void resetControls() {
 	verticalBanding = DEFAULT_VERTICAL_BANDING;
 	horizontalBanding = DEFAULT_HORIZONTAL_BANDING;
 
+	syncParameterControls();
+
+	saveStatus = "controls reset";
+	saveStatusFrames = 180;
+}
+
+void syncParameterControls() {
 	setLogRateControlValue("seedRateSlider", seedRate);
 	setLogRateControlValue("infectionRateSlider", infectionRate);
 	setLogRateControlValue("developRateSlider", developRate);
@@ -334,9 +371,6 @@ public void resetControls() {
 	setControlValue("noiseAmount", noiseAmount);
 	setControlValue("verticalBanding", verticalBanding);
 	setControlValue("horizontalBanding", horizontalBanding);
-
-	saveStatus = "controls reset";
-	saveStatusFrames = 180;
 }
 
 void setControlValue(String controlName, float value) {
@@ -426,6 +460,152 @@ public void autocatalyticRateSlider(float position) {
 	}
 	autocatalyticRate = sliderPositionToRate(position);
 	updateLogRateValueLabel("autocatalyticRateSlider", autocatalyticRate);
+}
+
+void loadPresets() {
+	presets = new JSONArray();
+	File presetsFile = new File(sketchPath(PRESETS_FILE_NAME));
+	if (!presetsFile.exists()) {
+		return;
+	}
+
+	try {
+		JSONObject root = loadJSONObject(presetsFile.getAbsolutePath());
+		if (root != null && root.hasKey("presets")) {
+			JSONArray loadedPresets = root.getJSONArray("presets");
+			if (loadedPresets != null) {
+				presets = loadedPresets;
+			}
+		}
+	} catch (Exception error) {
+		println("Could not load presets: " + error.getMessage());
+	}
+}
+
+void savePresets() {
+	JSONObject root = new JSONObject();
+	root.setInt("version", 1);
+	root.setJSONArray("presets", presets);
+	saveJSONObject(root, sketchPath(PRESETS_FILE_NAME));
+}
+
+JSONObject captureCurrentPreset(String name) {
+	JSONObject preset = new JSONObject();
+	preset.setString("name", name);
+	preset.setFloat("seedRate", seedRate);
+	preset.setFloat("infectionRate", infectionRate);
+	preset.setFloat("developRate", developRate);
+	preset.setFloat("exhaustionRate", exhaustionRate);
+	preset.setFloat("exhaustionRecovery", exhaustionRecovery);
+	preset.setFloat("autocatalyticRate", autocatalyticRate);
+	preset.setFloat("lightHue", lightHue);
+	preset.setFloat("lightSaturation", lightSaturation);
+	preset.setFloat("noiseAmount", noiseAmount);
+	preset.setFloat("verticalBanding", verticalBanding);
+	preset.setFloat("horizontalBanding", horizontalBanding);
+	return preset;
+}
+
+int findPresetIndex(String name) {
+	for (int i = 0; i < presets.size(); i++) {
+		JSONObject preset = presets.getJSONObject(i);
+		if (preset != null && name.equalsIgnoreCase(preset.getString("name", ""))) {
+			return i;
+		}
+	}
+	return -1;
+}
+
+public void saveAsPreset() {
+	String name = JOptionPane.showInputDialog(null, "Preset name:", "Save as preset", JOptionPane.PLAIN_MESSAGE);
+	if (name == null) {
+		return;
+	}
+
+	name = name.trim();
+	if (name.length() == 0) {
+		saveStatus = "preset name cannot be empty";
+		saveStatusFrames = 180;
+		return;
+	}
+
+	JSONObject preset = captureCurrentPreset(name);
+	int existingIndex = findPresetIndex(name);
+	if (existingIndex >= 0) {
+		presets.setJSONObject(existingIndex, preset);
+	} else {
+		presets.append(preset);
+	}
+
+	try {
+		savePresets();
+		refreshPresetMenu();
+		saveStatus = "saved preset " + name;
+		saveStatusFrames = 240;
+	} catch (Exception error) {
+		saveStatus = "failed to save preset";
+		saveStatusFrames = 240;
+		println("Could not save presets: " + error.getMessage());
+	}
+}
+
+void refreshPresetMenu() {
+	if (cp5 == null) {
+		return;
+	}
+
+	Controller<?> control = cp5.getController("presetMenu");
+	if (!(control instanceof ScrollableList)) {
+		return;
+	}
+
+	boolean wasSuppressed = suppressPresetSelection;
+	suppressPresetSelection = true;
+	ScrollableList menu = (ScrollableList) control;
+	menu.clear();
+	menu.setCaptionLabel(presets.size() == 0 ? "NO PRESETS" : "PRESETS");
+	for (int i = 0; i < presets.size(); i++) {
+		JSONObject preset = presets.getJSONObject(i);
+		if (preset != null) {
+			String name = preset.getString("name", "Preset " + (i + 1));
+			menu.addItem(name, i);
+		}
+	}
+	menu.close();
+	suppressPresetSelection = wasSuppressed;
+}
+
+public void presetMenu(float selectedValue) {
+	if (suppressPresetSelection) {
+		return;
+	}
+
+	int selectedIndex = round(selectedValue);
+	if (selectedIndex < 0 || selectedIndex >= presets.size()) {
+		return;
+	}
+
+	JSONObject preset = presets.getJSONObject(selectedIndex);
+	if (preset == null) {
+		return;
+	}
+
+	seedRate = constrain(preset.getFloat("seedRate", seedRate), RATE_SLIDER_MIN, RATE_SLIDER_MAX);
+	infectionRate = constrain(preset.getFloat("infectionRate", infectionRate), RATE_SLIDER_MIN, RATE_SLIDER_MAX);
+	developRate = constrain(preset.getFloat("developRate", developRate), RATE_SLIDER_MIN, RATE_SLIDER_MAX);
+	exhaustionRate = constrain(preset.getFloat("exhaustionRate", exhaustionRate), RATE_SLIDER_MIN, RATE_SLIDER_MAX);
+	exhaustionRecovery = constrain(preset.getFloat("exhaustionRecovery", exhaustionRecovery), RATE_SLIDER_MIN, RATE_SLIDER_MAX);
+	autocatalyticRate = constrain(preset.getFloat("autocatalyticRate", autocatalyticRate), RATE_SLIDER_MIN, RATE_SLIDER_MAX);
+	lightHue = constrain(preset.getFloat("lightHue", lightHue), 0, 360);
+	lightSaturation = constrain(preset.getFloat("lightSaturation", lightSaturation), 0, 100);
+	noiseAmount = constrain(preset.getFloat("noiseAmount", noiseAmount), 0, 0.5);
+	verticalBanding = constrain(preset.getFloat("verticalBanding", verticalBanding), 0, 1);
+	horizontalBanding = constrain(preset.getFloat("horizontalBanding", horizontalBanding), 0, 1);
+	syncParameterControls();
+
+	String name = preset.getString("name", "preset");
+	saveStatus = "loaded preset " + name;
+	saveStatusFrames = 240;
 }
 
 void styleSlider(Controller<?> slider) {

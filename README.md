@@ -158,6 +158,12 @@ Writes the current rendered image to the sketch folder in TIFF format as:
 
 - `lith_YYYYMMDD_HHMMSS.tif`
 
+### Presets
+`SAVE AS PRESET` prompts for a name and stores the current slider values. Selecting a name from the `PRESETS` dropdown restores those values without restarting the simulation.
+
+- Presets are stored in `presets.json` in the sketch folder.
+- Saving with an existing name updates that preset.
+
 ## Practical tuning tips
 
 - Faster spread: increase `infectionRate`.

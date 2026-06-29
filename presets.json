@@ -1,0 +1,33 @@
+{
+  "presets": [
+    {
+      "developRate": 0.10999999940395355,
+      "exhaustionRecovery": 0.012000000104308128,
+      "autocatalyticRate": 0.15000000596046448,
+      "infectionRate": 0.17000000178813934,
+      "horizontalBanding": 0,
+      "name": "default",
+      "noiseAmount": 0.10000000149011612,
+      "lightSaturation": 25,
+      "seedRate": 0.029999999329447746,
+      "exhaustionRate": 0.054999999701976776,
+      "lightHue": 33,
+      "verticalBanding": 0
+    },
+    {
+      "developRate": 0.10999999940395355,
+      "exhaustionRecovery": 0.012000000104308128,
+      "autocatalyticRate": 0.007438894361257553,
+      "infectionRate": 0.01094223652034998,
+      "horizontalBanding": 0,
+      "name": "oriental",
+      "noiseAmount": 0.10000000149011612,
+      "lightSaturation": 25,
+      "seedRate": 0.029999999329447746,
+      "exhaustionRate": 0.054999999701976776,
+      "lightHue": 219.21786499023438,
+      "verticalBanding": 0
+    }
+  ],
+  "version": 1
+}
