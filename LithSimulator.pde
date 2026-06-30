@@ -703,7 +703,7 @@ public void loadImageFromDialog() {
 	selectInput("Select an image", "onImageFileSelected");
 }
 
-public void onImageFileSelected(File selection) {
+public synchronized void onImageFileSelected(File selection) {
 	if (selection == null) {
 		saveStatus = "image selection canceled";
 		saveStatusFrames = 180;
@@ -726,7 +726,9 @@ public void onImageFileSelected(File selection) {
 	saveStatusFrames = 240;
 }
 
-void clearSimulationBuffers() {
+// Image selection callbacks may run on a different thread from draw(). Keep
+// buffer replacement atomic with respect to simulation steps.
+synchronized void clearSimulationBuffers() {
 	simulationReady = false;
 	simView = null;
 	toneSeed = null;
@@ -744,7 +746,7 @@ void clearSimulationBuffers() {
 	simSize = 0;
 }
 
-void initializeSimulation() {
+synchronized void initializeSimulation() {
 	clearSimulationBuffers();
 
 	simW = sourceImage.width;
@@ -823,7 +825,7 @@ void buildBandProfile(float[] profile) {
 	}
 }
 
-void stepSimulation() {
+synchronized void stepSimulation() {
 	if (devA == null || devB == null || exhaustedA == null || exhaustedB == null || developedA == null || developedB == null
 		|| toneSeed == null || toneNoise == null || verticalBandProfile == null || horizontalBandProfile == null) {
 		return;
