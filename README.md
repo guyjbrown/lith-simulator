@@ -4,10 +4,11 @@ A Processing sketch that simulates lith-style development dynamics from an input
 
 ## What the simulation does
 
-The loaded image is converted into a per-pixel tone seed (`t`) from brightness:
+The loaded image is converted into a per-pixel tone seed (`t`) from brightness and exposure:
 
 - brighter pixels -> lower `t`
 - darker pixels -> higher `t`
+- positive exposure stops increase `t` before development begins
 
 Each simulation step updates three main per-pixel state values:
 
@@ -59,6 +60,14 @@ Self-reinforcement from already developed density.
 - Higher values make developed regions accelerate their own continued growth.
 - Increases contrast and can push dark regions deeper/faster.
 
+### exposureStops (0..4)
+Pre-development exposure increase, measured in photographic stops.
+
+- `0` preserves the source-derived tone used by earlier versions.
+- Each additional stop doubles effective exposure before development.
+- Exposure changes take effect on the next manual restart or image load.
+- A typical lith-print starting point is `2..3` stops.
+
 ### lightHue (0..360)
 Hue for the mid-tone paper anchor color in rendering.
 
@@ -95,6 +104,8 @@ For each pixel index `i` at position `(x, y)`, one simulation step computes:
 
 Input tone and modulation:
 
+- `exposureMultiplier = 2 ^ exposureStops`
+- `toneSeed = clamp(1 - brightness ^ exposureMultiplier, 0, 1)`
 - `verticalBand = verticalBandProfile[x] * verticalBanding`
 - `horizontalBand = horizontalBandProfile[y] * horizontalBanding`
 - `localNoiseAmount = noiseAmount * (1 + verticalBand) * (1 + horizontalBand)`
@@ -159,7 +170,7 @@ Writes the current rendered image to the sketch folder in TIFF format as:
 - `lith_YYYYMMDD_HHMMSS.tif`
 
 ### Presets
-`SAVE AS PRESET` prompts for a name and stores the current slider values. Selecting a name from the `PRESETS` dropdown restores those values without restarting the simulation.
+`SAVE AS PRESET` prompts for a name and stores the current slider values. Selecting a name from the `PRESETS` dropdown restores those values without restarting the simulation. A restored exposure value takes effect on the next manual restart or image load.
 
 - Presets are stored in `presets.json` in the sketch folder.
 - Saving with an existing name updates that preset.
@@ -168,6 +179,7 @@ Writes the current rendered image to the sketch folder in TIFF format as:
 
 - Faster spread: increase `infectionRate`.
 - More self-darkening: increase `autocatalyticRate` and `developRate`.
+- Heavier pre-development exposure: increase `exposureStops` (typically to `2..3`).
 - More restrained growth: increase `exhaustionRate` or lower `seedRate`.
 - More texture/grain: increase `noiseAmount`.
 - Add vertical striping: increase `verticalBanding`.

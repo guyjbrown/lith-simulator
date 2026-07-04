@@ -35,6 +35,7 @@ final float DEFAULT_DEVELOP_RATE = 0.110;
 final float DEFAULT_EXHAUSTION_RATE = 0.055;
 final float DEFAULT_EXHAUSTION_RECOVERY = 0.012;
 final float DEFAULT_AUTOCATALYTIC_RATE = 0.150;
+final float DEFAULT_EXPOSURE_STOPS = 0.0;
 final float DEFAULT_LIGHT_HUE = 33;
 final float DEFAULT_LIGHT_SATURATION = 25;
 final float DEFAULT_NOISE_AMOUNT = 0.1;
@@ -50,6 +51,7 @@ float developRate = DEFAULT_DEVELOP_RATE;
 float exhaustionRate = DEFAULT_EXHAUSTION_RATE;
 float exhaustionRecovery = DEFAULT_EXHAUSTION_RECOVERY;
 float autocatalyticRate = DEFAULT_AUTOCATALYTIC_RATE;
+float exposureStops = DEFAULT_EXPOSURE_STOPS;
 float lightHue = DEFAULT_LIGHT_HUE;
 float lightSaturation = DEFAULT_LIGHT_SATURATION;
 float noiseAmount = DEFAULT_NOISE_AMOUNT;
@@ -220,6 +222,16 @@ void initializeControls() {
 	updateLogRateValueLabel("autocatalyticRateSlider", autocatalyticRate);
 	y += gap;
 
+	cp5.addSlider("exposureStopsSlider")
+		.setPosition(x, y)
+		.setSize(w, h)
+		.setRange(0, 4)
+		.setValue(exposureStops)
+		.setDecimalPrecision(2)
+		.setLabel("exposure (stops)");
+	styleSlider(cp5.getController("exposureStopsSlider"));
+	y += gap;
+
 	cp5.addSlider("lightHue")
 		.setPosition(x, y)
 		.setSize(w, h)
@@ -353,6 +365,7 @@ public void resetControls() {
 	exhaustionRate = DEFAULT_EXHAUSTION_RATE;
 	exhaustionRecovery = DEFAULT_EXHAUSTION_RECOVERY;
 	autocatalyticRate = DEFAULT_AUTOCATALYTIC_RATE;
+	exposureStops = DEFAULT_EXPOSURE_STOPS;
 	lightHue = DEFAULT_LIGHT_HUE;
 	lightSaturation = DEFAULT_LIGHT_SATURATION;
 	noiseAmount = DEFAULT_NOISE_AMOUNT;
@@ -372,6 +385,7 @@ void syncParameterControls() {
 	setLogRateControlValue("exhaustionRateSlider", exhaustionRate);
 	setLogRateControlValue("exhaustionRecoverySlider", exhaustionRecovery);
 	setLogRateControlValue("autocatalyticRateSlider", autocatalyticRate);
+	setControlValue("exposureStopsSlider", exposureStops);
 	setControlValue("lightHue", lightHue);
 	setControlValue("lightSaturation", lightSaturation);
 	setControlValue("noiseAmount", noiseAmount);
@@ -468,6 +482,18 @@ public void autocatalyticRateSlider(float position) {
 	updateLogRateValueLabel("autocatalyticRateSlider", autocatalyticRate);
 }
 
+public void exposureStopsSlider(float stops) {
+	if (suppressRateSliderCallbacks) {
+		return;
+	}
+
+	exposureStops = constrain(stops, 0, 4);
+	if (sourceImage != null) {
+		saveStatus = "exposure applies on next restart";
+		saveStatusFrames = 180;
+	}
+}
+
 void loadPresets() {
 	presets = new JSONArray();
 	File presetsFile = new File(sketchPath(PRESETS_FILE_NAME));
@@ -504,6 +530,7 @@ JSONObject captureCurrentPreset(String name) {
 	preset.setFloat("exhaustionRate", exhaustionRate);
 	preset.setFloat("exhaustionRecovery", exhaustionRecovery);
 	preset.setFloat("autocatalyticRate", autocatalyticRate);
+	preset.setFloat("exposureStops", exposureStops);
 	preset.setFloat("lightHue", lightHue);
 	preset.setFloat("lightSaturation", lightSaturation);
 	preset.setFloat("noiseAmount", noiseAmount);
@@ -602,6 +629,7 @@ public void presetMenu(float selectedValue) {
 	exhaustionRate = constrain(preset.getFloat("exhaustionRate", exhaustionRate), RATE_SLIDER_MIN, RATE_SLIDER_MAX);
 	exhaustionRecovery = constrain(preset.getFloat("exhaustionRecovery", exhaustionRecovery), RATE_SLIDER_MIN, RATE_SLIDER_MAX);
 	autocatalyticRate = constrain(preset.getFloat("autocatalyticRate", autocatalyticRate), RATE_SLIDER_MIN, RATE_SLIDER_MAX);
+	exposureStops = constrain(preset.getFloat("exposureStops", DEFAULT_EXPOSURE_STOPS), 0, 4);
 	lightHue = constrain(preset.getFloat("lightHue", lightHue), 0, 360);
 	lightSaturation = constrain(preset.getFloat("lightSaturation", lightSaturation), 0, 100);
 	noiseAmount = constrain(preset.getFloat("noiseAmount", noiseAmount), 0, 0.5);
@@ -778,6 +806,7 @@ synchronized void initializeSimulation() {
 
 void loadToneSeed() {
 	sourceImage.loadPixels();
+	float exposureMultiplier = pow(2.0, exposureStops);
 
 	for (int y = 0; y < simH; y++) {
 		int srcY = y;
@@ -787,7 +816,7 @@ void loadToneSeed() {
 			int idx = y * simW + x;
 
 			float b = brightness(sourceImage.pixels[srcIdx]) / 255.0;
-			float t = constrain(1.0 - b, 0, 1);
+			float t = constrain(1.0 - pow(b, exposureMultiplier), 0, 1);
 			float n = random(-1.0, 1.0);
 
 			toneSeed[idx] = t;
