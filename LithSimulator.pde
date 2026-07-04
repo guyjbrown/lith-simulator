@@ -39,6 +39,7 @@ final float DEFAULT_EXPOSURE_STOPS = 0.0;
 final float DEFAULT_LIGHT_HUE = 33;
 final float DEFAULT_LIGHT_SATURATION = 25;
 final float DEFAULT_NOISE_AMOUNT = 0.1;
+final float DEFAULT_GRAIN_BALANCE = 0.5;
 final float DEFAULT_VERTICAL_BANDING = 0.0;
 final float DEFAULT_HORIZONTAL_BANDING = 0.0;
 final float RATE_SLIDER_MIN = 0.001;
@@ -55,6 +56,7 @@ float exposureStops = DEFAULT_EXPOSURE_STOPS;
 float lightHue = DEFAULT_LIGHT_HUE;
 float lightSaturation = DEFAULT_LIGHT_SATURATION;
 float noiseAmount = DEFAULT_NOISE_AMOUNT;
+float grainBalance = DEFAULT_GRAIN_BALANCE;
 float verticalBanding = DEFAULT_VERTICAL_BANDING;
 float horizontalBanding = DEFAULT_HORIZONTAL_BANDING;
 boolean paused = false;
@@ -261,8 +263,17 @@ void initializeControls() {
 		.setSize(w, h)
 		.setRange(0, 0.5)
 		.setValue(noiseAmount)
-		.setLabel("noise amount");
+		.setLabel("grain amount");
 	styleSlider(cp5.getController("noiseAmount"));
+	y += gap;
+
+	cp5.addSlider("grainBalance")
+		.setPosition(x, y)
+		.setSize(w, h)
+		.setRange(0, 1)
+		.setValue(grainBalance)
+		.setLabel("grain balance");
+	styleSlider(cp5.getController("grainBalance"));
 	y += gap;
 
 	cp5.addSlider("verticalBanding")
@@ -369,6 +380,7 @@ public void resetControls() {
 	lightHue = DEFAULT_LIGHT_HUE;
 	lightSaturation = DEFAULT_LIGHT_SATURATION;
 	noiseAmount = DEFAULT_NOISE_AMOUNT;
+	grainBalance = DEFAULT_GRAIN_BALANCE;
 	verticalBanding = DEFAULT_VERTICAL_BANDING;
 	horizontalBanding = DEFAULT_HORIZONTAL_BANDING;
 
@@ -389,6 +401,7 @@ void syncParameterControls() {
 	setControlValue("lightHue", lightHue);
 	setControlValue("lightSaturation", lightSaturation);
 	setControlValue("noiseAmount", noiseAmount);
+	setControlValue("grainBalance", grainBalance);
 	setControlValue("verticalBanding", verticalBanding);
 	setControlValue("horizontalBanding", horizontalBanding);
 }
@@ -534,6 +547,7 @@ JSONObject captureCurrentPreset(String name) {
 	preset.setFloat("lightHue", lightHue);
 	preset.setFloat("lightSaturation", lightSaturation);
 	preset.setFloat("noiseAmount", noiseAmount);
+	preset.setFloat("grainBalance", grainBalance);
 	preset.setFloat("verticalBanding", verticalBanding);
 	preset.setFloat("horizontalBanding", horizontalBanding);
 	return preset;
@@ -633,6 +647,7 @@ public void presetMenu(float selectedValue) {
 	lightHue = constrain(preset.getFloat("lightHue", lightHue), 0, 360);
 	lightSaturation = constrain(preset.getFloat("lightSaturation", lightSaturation), 0, 100);
 	noiseAmount = constrain(preset.getFloat("noiseAmount", noiseAmount), 0, 0.5);
+	grainBalance = constrain(preset.getFloat("grainBalance", DEFAULT_GRAIN_BALANCE), 0, 1);
 	verticalBanding = constrain(preset.getFloat("verticalBanding", verticalBanding), 0, 1);
 	horizontalBanding = constrain(preset.getFloat("horizontalBanding", horizontalBanding), 0, 1);
 	syncParameterControls();
@@ -869,7 +884,10 @@ synchronized void stepSimulation() {
 			float localDeveloped = developedA[idx];
 			float verticalBand = verticalBandProfile[x] * verticalBanding;
 			float horizontalBand = horizontalBandProfile[y] * horizontalBanding;
-			float localNoiseAmount = noiseAmount * (1.0 + verticalBand) * (1.0 + horizontalBand);
+			float darkTone = constrain((toneSeed[idx] - 0.75) / 0.25, 0, 1);
+			float darkToneWeight = darkTone * darkTone * (3.0 - 2.0 * darkTone);
+			float toneWeight = lerp(darkToneWeight, 1.0, grainBalance);
+			float localNoiseAmount = noiseAmount * toneWeight * (1.0 + verticalBand) * (1.0 + horizontalBand);
 			float t = constrain(toneSeed[idx] + toneNoise[idx] * localNoiseAmount, 0, 1);
 
 			float neighborDev = neighborhoodDeveloper(x, y);

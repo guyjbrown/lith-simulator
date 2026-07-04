@@ -86,6 +86,13 @@ Amount of static per-pixel random tone perturbation.
 - Adds grain/texture to tone seed before each step.
 - Higher values create more stochastic variation in where development starts/spreads.
 
+### grainBalance (0..1)
+Controls which tones receive noise.
+
+- `1` applies the selected noise amount equally across all tones.
+- `0` restricts noise to the darkest quarter of the tone range, with a smooth transition.
+- Intermediate values retain progressively more noise in highlights and midtones.
+
 ### verticalBanding (0..1)
 Vertical band modulation strength applied to `noiseAmount`.
 
@@ -108,7 +115,9 @@ Input tone and modulation:
 - `toneSeed = clamp(1 - brightness ^ exposureMultiplier, 0, 1)`
 - `verticalBand = verticalBandProfile[x] * verticalBanding`
 - `horizontalBand = horizontalBandProfile[y] * horizontalBanding`
-- `localNoiseAmount = noiseAmount * (1 + verticalBand) * (1 + horizontalBand)`
+- `darkToneWeight = smoothstep(0.75, 1, toneSeed[i])`
+- `toneWeight = lerp(darkToneWeight, 1, grainBalance)`
+- `localNoiseAmount = noiseAmount * toneWeight * (1 + verticalBand) * (1 + horizontalBand)`
 - `t = clamp(toneSeed[i] + toneNoise[i] * localNoiseAmount, 0, 1)`
 
 Neighborhood activity:
@@ -182,6 +191,7 @@ Writes the current rendered image to the sketch folder in TIFF format as:
 - Heavier pre-development exposure: increase `exposureStops` (typically to `2..3`).
 - More restrained growth: increase `exhaustionRate` or lower `seedRate`.
 - More texture/grain: increase `noiseAmount`.
+- Restrict grain toward shadows: decrease `grainBalance`.
 - Add vertical striping: increase `verticalBanding`.
 - Add horizontal striping: increase `horizontalBanding`.
 
