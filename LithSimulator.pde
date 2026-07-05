@@ -120,10 +120,51 @@ void draw() {
 		float drawY = viewportY + (viewportH - drawH) * 0.5;
 
 		image(frameView, drawX, drawY, drawW, drawH);
+		drawPixelTooltip(frameView, drawX, drawY, drawW, drawH);
 	} else {
 		fill(210);
 		text("No image loaded", panelW + panelImageGutter + 16, 32);
 	}
+}
+
+void drawPixelTooltip(PImage imageView, float imageX, float imageY, float imageW, float imageH) {
+	if (imageView == null || imageView.pixels == null || imageW <= 0 || imageH <= 0) {
+		return;
+	}
+
+	if (mouseX < imageX || mouseX >= imageX + imageW
+		|| mouseY < imageY || mouseY >= imageY + imageH) {
+		return;
+	}
+
+	int pixelX = constrain(floor((mouseX - imageX) * imageView.width / imageW), 0, imageView.width - 1);
+	int pixelY = constrain(floor((mouseY - imageY) * imageView.height / imageH), 0, imageView.height - 1);
+	int pixelIndex = pixelY * imageView.width + pixelX;
+	if (pixelIndex < 0 || pixelIndex >= imageView.pixels.length) {
+		return;
+	}
+
+	int pixelColor = imageView.pixels[pixelIndex];
+	String label = "RGB " + round(red(pixelColor)) + ", "
+		+ round(green(pixelColor)) + ", " + round(blue(pixelColor));
+
+	textSize(12);
+	float paddingX = 7;
+	float tooltipW = textWidth(label) + paddingX * 2;
+	float tooltipH = 24;
+	float tooltipX = constrain(mouseX + 14, 4, width - tooltipW - 4);
+	float tooltipY = mouseY + 18;
+	if (tooltipY + tooltipH > height - 4) {
+		tooltipY = mouseY - tooltipH - 10;
+	}
+
+	noStroke();
+	fill(20, 24, 28, 230);
+	rect(tooltipX, tooltipY, tooltipW, tooltipH, 4);
+	fill(240);
+	textAlign(LEFT, CENTER);
+	text(label, tooltipX + paddingX, tooltipY + tooltipH * 0.5 - 1);
+	textAlign(LEFT, BASELINE);
 }
 
 void drawPanelBackground() {
