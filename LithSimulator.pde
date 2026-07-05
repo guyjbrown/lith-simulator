@@ -36,8 +36,11 @@ final float DEFAULT_EXHAUSTION_RATE = 0.055;
 final float DEFAULT_EXHAUSTION_RECOVERY = 0.012;
 final float DEFAULT_AUTOCATALYTIC_RATE = 0.150;
 final float DEFAULT_EXPOSURE_STOPS = 0.0;
+final float DEFAULT_CURVE_TOE_STOPS = -0.95;
+final float DEFAULT_CURVE_SHOULDER_STOPS = 3.28;
 final float DEFAULT_LIGHT_HUE = 33;
 final float DEFAULT_LIGHT_SATURATION = 25;
+final float DEFAULT_PAPER_BASE_DENSITY = 0.05;
 final float DEFAULT_NOISE_AMOUNT = 0.1;
 final float DEFAULT_GRAIN_BALANCE = 0.5;
 final float DEFAULT_VERTICAL_BANDING = 0.0;
@@ -53,8 +56,11 @@ float exhaustionRate = DEFAULT_EXHAUSTION_RATE;
 float exhaustionRecovery = DEFAULT_EXHAUSTION_RECOVERY;
 float autocatalyticRate = DEFAULT_AUTOCATALYTIC_RATE;
 float exposureStops = DEFAULT_EXPOSURE_STOPS;
+float curveToeStops = DEFAULT_CURVE_TOE_STOPS;
+float curveShoulderStops = DEFAULT_CURVE_SHOULDER_STOPS;
 float lightHue = DEFAULT_LIGHT_HUE;
 float lightSaturation = DEFAULT_LIGHT_SATURATION;
+float paperBaseDensity = DEFAULT_PAPER_BASE_DENSITY;
 float noiseAmount = DEFAULT_NOISE_AMOUNT;
 float grainBalance = DEFAULT_GRAIN_BALANCE;
 float verticalBanding = DEFAULT_VERTICAL_BANDING;
@@ -156,7 +162,7 @@ void initializeControls() {
 	int fullW = 70+panelW - panelPadding * 2;
 	int w = fullW / 2;
 	int h = 18;
-	int gap = 34;
+	int gap = 27;
 	int actionW = panelW - panelPadding * 2;
 	int buttonGap = 16;
 	int buttonW = (actionW - buttonGap) / 2;
@@ -234,6 +240,26 @@ void initializeControls() {
 	styleSlider(cp5.getController("exposureStopsSlider"));
 	y += gap;
 
+	cp5.addSlider("curveToeStopsSlider")
+		.setPosition(x, y)
+		.setSize(w, h)
+		.setRange(-2, 4)
+		.setValue(curveToeStops)
+		.setDecimalPrecision(2)
+		.setLabel("curve toe (stops)");
+	styleSlider(cp5.getController("curveToeStopsSlider"));
+	y += gap;
+
+	cp5.addSlider("curveShoulderStopsSlider")
+		.setPosition(x, y)
+		.setSize(w, h)
+		.setRange(0.25, 8)
+		.setValue(curveShoulderStops)
+		.setDecimalPrecision(2)
+		.setLabel("curve shoulder (stops)");
+	styleSlider(cp5.getController("curveShoulderStopsSlider"));
+	y += gap;
+
 	cp5.addSlider("lightHue")
 		.setPosition(x, y)
 		.setSize(w, h)
@@ -256,6 +282,16 @@ void initializeControls() {
 		.setDecimalPrecision(0)
 		.setLabel("light saturation");
 	styleSlider(cp5.getController("lightSaturation"));
+	y += gap;
+
+	cp5.addSlider("paperBaseDensity")
+		.setPosition(x, y)
+		.setSize(w, h)
+		.setRange(0, 0.3)
+		.setValue(paperBaseDensity)
+		.setDecimalPrecision(2)
+		.setLabel("paper base density");
+	styleSlider(cp5.getController("paperBaseDensity"));
 	y += gap;
 
 	cp5.addSlider("noiseAmount")
@@ -377,8 +413,11 @@ public void resetControls() {
 	exhaustionRecovery = DEFAULT_EXHAUSTION_RECOVERY;
 	autocatalyticRate = DEFAULT_AUTOCATALYTIC_RATE;
 	exposureStops = DEFAULT_EXPOSURE_STOPS;
+	curveToeStops = DEFAULT_CURVE_TOE_STOPS;
+	curveShoulderStops = DEFAULT_CURVE_SHOULDER_STOPS;
 	lightHue = DEFAULT_LIGHT_HUE;
 	lightSaturation = DEFAULT_LIGHT_SATURATION;
+	paperBaseDensity = DEFAULT_PAPER_BASE_DENSITY;
 	noiseAmount = DEFAULT_NOISE_AMOUNT;
 	grainBalance = DEFAULT_GRAIN_BALANCE;
 	verticalBanding = DEFAULT_VERTICAL_BANDING;
@@ -398,8 +437,11 @@ void syncParameterControls() {
 	setLogRateControlValue("exhaustionRecoverySlider", exhaustionRecovery);
 	setLogRateControlValue("autocatalyticRateSlider", autocatalyticRate);
 	setControlValue("exposureStopsSlider", exposureStops);
+	setControlValue("curveToeStopsSlider", curveToeStops);
+	setControlValue("curveShoulderStopsSlider", curveShoulderStops);
 	setControlValue("lightHue", lightHue);
 	setControlValue("lightSaturation", lightSaturation);
+	setControlValue("paperBaseDensity", paperBaseDensity);
 	setControlValue("noiseAmount", noiseAmount);
 	setControlValue("grainBalance", grainBalance);
 	setControlValue("verticalBanding", verticalBanding);
@@ -507,6 +549,30 @@ public void exposureStopsSlider(float stops) {
 	}
 }
 
+public void curveToeStopsSlider(float stops) {
+	if (suppressRateSliderCallbacks) {
+		return;
+	}
+
+	curveToeStops = constrain(stops, -2, 4);
+	if (sourceImage != null) {
+		saveStatus = "curve toe applies on next restart";
+		saveStatusFrames = 180;
+	}
+}
+
+public void curveShoulderStopsSlider(float stops) {
+	if (suppressRateSliderCallbacks) {
+		return;
+	}
+
+	curveShoulderStops = constrain(stops, 0.25, 8);
+	if (sourceImage != null) {
+		saveStatus = "curve shoulder applies on next restart";
+		saveStatusFrames = 180;
+	}
+}
+
 void loadPresets() {
 	presets = new JSONArray();
 	File presetsFile = new File(sketchPath(PRESETS_FILE_NAME));
@@ -544,8 +610,11 @@ JSONObject captureCurrentPreset(String name) {
 	preset.setFloat("exhaustionRecovery", exhaustionRecovery);
 	preset.setFloat("autocatalyticRate", autocatalyticRate);
 	preset.setFloat("exposureStops", exposureStops);
+	preset.setFloat("curveToeStops", curveToeStops);
+	preset.setFloat("curveShoulderStops", curveShoulderStops);
 	preset.setFloat("lightHue", lightHue);
 	preset.setFloat("lightSaturation", lightSaturation);
+	preset.setFloat("paperBaseDensity", paperBaseDensity);
 	preset.setFloat("noiseAmount", noiseAmount);
 	preset.setFloat("grainBalance", grainBalance);
 	preset.setFloat("verticalBanding", verticalBanding);
@@ -644,8 +713,11 @@ public void presetMenu(float selectedValue) {
 	exhaustionRecovery = constrain(preset.getFloat("exhaustionRecovery", exhaustionRecovery), RATE_SLIDER_MIN, RATE_SLIDER_MAX);
 	autocatalyticRate = constrain(preset.getFloat("autocatalyticRate", autocatalyticRate), RATE_SLIDER_MIN, RATE_SLIDER_MAX);
 	exposureStops = constrain(preset.getFloat("exposureStops", DEFAULT_EXPOSURE_STOPS), 0, 4);
+	curveToeStops = constrain(preset.getFloat("curveToeStops", DEFAULT_CURVE_TOE_STOPS), -2, 4);
+	curveShoulderStops = constrain(preset.getFloat("curveShoulderStops", DEFAULT_CURVE_SHOULDER_STOPS), 0.25, 8);
 	lightHue = constrain(preset.getFloat("lightHue", lightHue), 0, 360);
 	lightSaturation = constrain(preset.getFloat("lightSaturation", lightSaturation), 0, 100);
+	paperBaseDensity = constrain(preset.getFloat("paperBaseDensity", DEFAULT_PAPER_BASE_DENSITY), 0, 0.3);
 	noiseAmount = constrain(preset.getFloat("noiseAmount", noiseAmount), 0, 0.5);
 	grainBalance = constrain(preset.getFloat("grainBalance", DEFAULT_GRAIN_BALANCE), 0, 1);
 	verticalBanding = constrain(preset.getFloat("verticalBanding", verticalBanding), 0, 1);
@@ -821,7 +893,8 @@ synchronized void initializeSimulation() {
 
 void loadToneSeed() {
 	sourceImage.loadPixels();
-	float exposureMultiplier = pow(2.0, exposureStops);
+	float toe = min(curveToeStops, curveShoulderStops - 0.01);
+	float shoulder = max(curveShoulderStops, toe + 0.01);
 
 	for (int y = 0; y < simH; y++) {
 		int srcY = y;
@@ -830,8 +903,10 @@ void loadToneSeed() {
 			int srcIdx = srcY * sourceImage.width + srcX;
 			int idx = y * simW + x;
 
-			float b = brightness(sourceImage.pixels[srcIdx]) / 255.0;
-			float t = constrain(1.0 - pow(b, exposureMultiplier), 0, 1);
+			float b = max(brightness(sourceImage.pixels[srcIdx]) / 255.0, 0.0001);
+			float logExposure = -log(b) / log(2.0) + exposureStops;
+			float response = constrain((logExposure - toe) / (shoulder - toe), 0, 1);
+			float t = response * response * (3.0 - 2.0 * response);
 			float n = random(-1.0, 1.0);
 
 			toneSeed[idx] = t;
@@ -986,6 +1061,7 @@ void renderSimulation() {
 	float sepiaG = lightTone[1];
 	float sepiaB = lightTone[2];
 	float sepiaPivot = 0.55;
+	float baseReflectance = pow(10.0, -paperBaseDensity);
 	int maxCount = min(simSize, min(view.pixels.length, min(developed.length, exhausted.length)));
 
 	for (int i = 0; i < maxCount; i++) {
@@ -1015,6 +1091,12 @@ void renderSimulation() {
 			g = lerp(sepiaG, 0, t);
 			b = lerp(sepiaB, 0, t);
 		}
+
+		// Paper base-plus-fog density limits maximum reflectance. Applying it
+		// after the image tone keeps this rendering property out of development.
+		r *= baseReflectance;
+		g *= baseReflectance;
+		b *= baseReflectance;
 
 		view.pixels[i] = color(r, g, b);
 	}

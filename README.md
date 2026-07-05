@@ -16,7 +16,7 @@ Each simulation step updates three main per-pixel state values:
 - exhaustion (`exhausted`)
 - developed density (`developed`)
 
-The rendered output maps density from white -> sepia -> black.
+The rendered output maps density from the paper base -> sepia -> black.
 
 ## Parameters
 
@@ -61,12 +61,25 @@ Self-reinforcement from already developed density.
 - Increases contrast and can push dark regions deeper/faster.
 
 ### exposureStops (0..4)
-Pre-development exposure increase, measured in photographic stops.
+Pre-development exposure increase in log-exposure space, measured in photographic stops.
 
-- `0` preserves the source-derived tone used by earlier versions.
-- Each additional stop doubles effective exposure before development.
+- `0` applies no additional exposure shift before the characteristic curve.
+- Each additional stop shifts the paper response by one stop.
 - Exposure changes take effect on the next manual restart or image load.
 - A typical lith-print starting point is `2..3` stops.
+
+### curveToeStops (-2..4)
+Log-exposure point where the paper begins leaving its compressed highlight response.
+
+- Lower values open the highlights sooner.
+- Changes take effect on the next restart or image load.
+
+### curveShoulderStops (0.25..8)
+Log-exposure point where the response reaches maximum developed tone.
+
+- Higher values retain separation deeper into the shadows.
+- Keep this above the toe setting for a useful tonal range.
+- Changes take effect on the next restart or image load.
 
 ### lightHue (0..360)
 Hue for the mid-tone paper anchor color in rendering.
@@ -79,6 +92,13 @@ Saturation for the same light-tone anchor color.
 
 - Does not change simulation dynamics.
 - Lower values look more neutral/gray-beige; higher values look more chromatic.
+
+### paperBaseDensity (0..0.3)
+Minimum optical density contributed by the paper base and fog.
+
+- `0` allows pure white.
+- The default `0.08` limits maximum reflectance to about 83%.
+- This affects rendering only, not simulation dynamics.
 
 ### noiseAmount (0..0.5)
 Amount of static per-pixel random tone perturbation.
@@ -111,8 +131,9 @@ For each pixel index `i` at position `(x, y)`, one simulation step computes:
 
 Input tone and modulation:
 
-- `exposureMultiplier = 2 ^ exposureStops`
-- `toneSeed = clamp(1 - brightness ^ exposureMultiplier, 0, 1)`
+- `logExposure = -log2(max(brightness, 0.0001)) + exposureStops`
+- `response = clamp((logExposure - curveToeStops) / (curveShoulderStops - curveToeStops), 0, 1)`
+- `toneSeed = smoothstep(0, 1, response)`
 - `verticalBand = verticalBandProfile[x] * verticalBanding`
 - `horizontalBand = horizontalBandProfile[y] * horizontalBanding`
 - `darkToneWeight = smoothstep(0.75, 1, toneSeed[i])`
