@@ -71,6 +71,10 @@ boolean suppressRateSliderCallbacks = false;
 boolean suppressPresetSelection = false;
 JSONArray presets = new JSONArray();
 long iterationCount = 0;
+long renderedIteration = -1;
+float renderedLightHue = Float.NaN;
+float renderedLightSaturation = Float.NaN;
+float renderedPaperBaseDensity = Float.NaN;
 String saveStatus = "";
 int saveStatusFrames = 0;
 
@@ -98,7 +102,14 @@ void draw() {
 			iterationCount++;
 		}
 
-		renderSimulation();
+		// A paused simulation often redraws only because the mouse moved. Reuse
+		// its pixels unless simulation state or a render-only control changed.
+		if (renderedIteration != iterationCount
+			|| renderedLightHue != lightHue
+			|| renderedLightSaturation != lightSaturation
+			|| renderedPaperBaseDensity != paperBaseDensity) {
+			renderSimulation();
+		}
 		PImage frameView = simView;
 		if (frameView == null || frameView.width <= 0 || frameView.height <= 0) {
 			fill(210);
@@ -309,7 +320,7 @@ void initializeControls() {
 		.setNumberOfTickMarks(361)
 		.showTickMarks(false)
 		.setDecimalPrecision(0)
-		.setLabel("light hue");
+		.setLabel("hue");
 	styleSlider(cp5.getController("lightHue"));
 	y += gap;
 
@@ -321,7 +332,7 @@ void initializeControls() {
 		.setNumberOfTickMarks(101)
 		.showTickMarks(false)
 		.setDecimalPrecision(0)
-		.setLabel("light saturation");
+		.setLabel("saturation");
 	styleSlider(cp5.getController("lightSaturation"));
 	y += gap;
 
@@ -909,6 +920,7 @@ synchronized void initializeSimulation() {
 	simH = sourceImage.height;
 	simSize = simW * simH;
 	iterationCount = 0;
+	renderedIteration = -1;
 
 	toneSeed = new float[simSize];
 
@@ -991,22 +1003,64 @@ synchronized void stepSimulation() {
 		return;
 	}
 
-	for (int y = 0; y < simH; y++) {
-		for (int x = 0; x < simW; x++) {
-			int idx = y * simW + x;
+	// Keep hot data and dimensions local so the JVM can eliminate repeated
+	// field lookups and array bounds checks in this full-image loop.
+	final int w = simW;
+	final int h = simH;
+	final float[] currentDev = devA;
+	final float[] currentExhausted = exhaustedA;
+	final float[] currentDeveloped = developedA;
+	final float[] nextDevBuffer = devB;
+	final float[] nextExhaustedBuffer = exhaustedB;
+	final float[] nextDevelopedBuffer = developedB;
+	final float diagonalWeight = 0.7071;
+	// Accumulate in the same order as neighborhoodDeveloper() so this fast
+	// path has the same floating-point denominator as the original code.
+	float interiorWeight = 0;
+	interiorWeight += diagonalWeight;
+	interiorWeight += 1.0;
+	interiorWeight += diagonalWeight;
+	interiorWeight += 1.0;
+	interiorWeight += 1.0;
+	interiorWeight += diagonalWeight;
+	interiorWeight += 1.0;
+	interiorWeight += diagonalWeight;
 
-			float localDev = devA[idx];
-			float localExhausted = exhaustedA[idx];
-			float localDeveloped = developedA[idx];
+	for (int y = 0; y < h; y++) {
+		int row = y * w;
+		float horizontalBand = horizontalBandProfile[y] * horizontalBanding;
+		for (int x = 0; x < w; x++) {
+			int idx = row + x;
+
+			float localDev = currentDev[idx];
+			float localExhausted = currentExhausted[idx];
+			float localDeveloped = currentDeveloped[idx];
 			float verticalBand = verticalBandProfile[x] * verticalBanding;
-			float horizontalBand = horizontalBandProfile[y] * horizontalBanding;
 			float darkTone = constrain((toneSeed[idx] - 0.75) / 0.25, 0, 1);
 			float darkToneWeight = darkTone * darkTone * (3.0 - 2.0 * darkTone);
 			float toneWeight = lerp(darkToneWeight, 1.0, grainBalance);
 			float localNoiseAmount = noiseAmount * toneWeight * (1.0 + verticalBand) * (1.0 + horizontalBand);
 			float t = constrain(toneSeed[idx] + toneNoise[idx] * localNoiseAmount, 0, 1);
 
-			float neighborDev = neighborhoodDeveloper(x, y);
+			float neighborDev;
+			if (x > 0 && x < w - 1 && y > 0 && y < h - 1) {
+				// The vast majority of pixels have all eight neighbors. Handling
+				// that case directly avoids 18 bounds checks and a method call per
+				// pixel; border pixels retain the original general implementation.
+				int above = idx - w;
+				int below = idx + w;
+				float neighborSum = currentDev[above - 1] * diagonalWeight;
+				neighborSum += currentDev[above];
+				neighborSum += currentDev[above + 1] * diagonalWeight;
+				neighborSum += currentDev[idx - 1];
+				neighborSum += currentDev[idx + 1];
+				neighborSum += currentDev[below - 1] * diagonalWeight;
+				neighborSum += currentDev[below];
+				neighborSum += currentDev[below + 1] * diagonalWeight;
+				neighborDev = neighborSum / interiorWeight;
+			} else {
+				neighborDev = neighborhoodDeveloper(x, y);
+			}
 
 			float freshFraction = 1.0 - localExhausted;
 			float seed = seedRate * t * freshFraction * (1.0 - localDeveloped);
@@ -1024,9 +1078,9 @@ synchronized void stepSimulation() {
 			float exhaustLoss = exhaustionRecovery * (1.0 - nextDev);
 			float nextExhausted = constrain(localExhausted + exhaustGain - exhaustLoss, 0, 1);
 
-			devB[idx] = nextDev;
-			exhaustedB[idx] = nextExhausted;
-			developedB[idx] = nextDeveloped;
+			nextDevBuffer[idx] = nextDev;
+			nextExhaustedBuffer[idx] = nextExhausted;
+			nextDevelopedBuffer[idx] = nextDeveloped;
 		}
 	}
 
@@ -1143,6 +1197,10 @@ void renderSimulation() {
 	}
 
 	view.updatePixels();
+	renderedIteration = iterationCount;
+	renderedLightHue = lightHue;
+	renderedLightSaturation = lightSaturation;
+	renderedPaperBaseDensity = paperBaseDensity;
 }
 
 float[] hueSatToRgb(float hueDeg, float satPct, float valuePct) {
