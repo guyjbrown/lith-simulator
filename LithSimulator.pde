@@ -455,6 +455,8 @@ public void resetSimulation() {
 	}
 
 	initializeSimulation();
+	paused = false;
+	updateRunButtonState();
 }
 
 public void resetControls() {
