@@ -2,6 +2,25 @@
   "presets": [
     {
       "exhaustionRecovery": 0.012000000104308128,
+      "infectionRate": 0.17000000178813934,
+      "exposureStops": 0,
+      "paperBaseDensity": 0.05000000074505806,
+      "lightSaturation": 25,
+      "seedRate": 0.029999999329447746,
+      "verticalBanding": 0,
+      "developRate": 0.10999999940395355,
+      "autocatalyticRate": 0.15000000596046448,
+      "curveToeStops": -0.949999988079071,
+      "horizontalBanding": 0,
+      "name": "default",
+      "noiseAmount": 0.10000000149011612,
+      "grainBalance": 0.5,
+      "exhaustionRate": 0.054999999701976776,
+      "curveShoulderStops": 3.2799999713897705,
+      "lightHue": 33
+    },
+    {
+      "exhaustionRecovery": 0.012000000104308128,
       "infectionRate": 0.029844224452972412,
       "exposureStops": 0,
       "paperBaseDensity": 0.06536313146352768,
@@ -55,6 +74,25 @@
       "grainBalance": 0.16759775578975677,
       "exhaustionRate": 0.02658158913254738,
       "curveShoulderStops": 6.484636306762695,
+      "lightHue": 33
+    },
+    {
+      "exhaustionRecovery": 0.012000000104308128,
+      "infectionRate": 0.17000000178813934,
+      "exposureStops": 0,
+      "paperBaseDensity": 0.05000000074505806,
+      "lightSaturation": 25,
+      "seedRate": 0.029999999329447746,
+      "verticalBanding": 0,
+      "developRate": 0.10999999940395355,
+      "autocatalyticRate": 0.15000000596046448,
+      "curveToeStops": -0.949999988079071,
+      "horizontalBanding": 0,
+      "name": "Ratcliffe",
+      "noiseAmount": 0.1536312848329544,
+      "grainBalance": 0.5,
+      "exhaustionRate": 0.054999999701976776,
+      "curveShoulderStops": 4.3198323249816895,
       "lightHue": 33
     }
   ],

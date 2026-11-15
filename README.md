@@ -2,6 +2,16 @@
 
 A Processing sketch that simulates lith-style development dynamics from an input image.
 
+## Example
+
+![alt text](example/ratcliffe-lith.jpg)
+
+Ratcliffe-on-Soar Power Station. Processed from the monochrome image ratcliffe-mono.jpg in the examples folder, with 184 iterations. Parameters were mostly default values except grain_amount = 0.5, curve_shoulder = 4.31.
+
+## How to run this code
+
+This requires Processing and the ControlP5 library. Download Processing from https://processing.org. Run Processing and load the LithSimulator.pde file. Add the ControlP5 library in Processing by going to Sketch > Import Library > Manage Libraries and searching for "ControlP5". 
+
 ## What the simulation does
 
 The loaded image is converted into a per-pixel tone seed (`t`) from brightness and exposure:
@@ -97,7 +107,7 @@ Saturation for the same light-tone anchor color.
 Minimum optical density contributed by the paper base and fog.
 
 - `0` allows pure white.
-- The default `0.08` limits maximum reflectance to about 83%.
+- The default `0.05` limits maximum reflectance to about 89%.
 - This affects rendering only, not simulation dynamics.
 
 ### noiseAmount (0..0.5)
@@ -188,19 +198,23 @@ Opens a file picker and loads an image from disk.
 - On success: resets and starts simulation from that image.
 - On cancel/failure: status text reports the result.
 
-### Reset
-Reinitializes the simulation using the currently loaded image.
+### Restart
+Reinitializes the simulation using the currently loaded image, resets the iteration count, regenerates random grain and banding profiles, and resumes running.
 
 ### Pause / Run
 Toggles simulation stepping.
 
-### Save Image
-Writes the current rendered image to the sketch folder in TIFF format as:
+### Nudge
+Advances exactly one iteration while paused. Does nothing while running.
 
-- `lith_YYYYMMDD_HHMMSS.tif`
+### Defaults
+Restores all sliders to their default values without restarting the simulation or changing its pause state. Exposure, curve toe, and curve shoulder changes take effect on the next restart or image load.
+
+### Save Image
+Opens a save dialog to choose a location and filename for the current rendered image at full resolution. Saves in TIFF format, appending `.tif` if the chosen filename does not already end with that extension.
 
 ### Presets
-`SAVE AS PRESET` prompts for a name and stores the current slider values. Selecting a name from the `PRESETS` dropdown restores those values without restarting the simulation. A restored exposure value takes effect on the next manual restart or image load.
+`SAVE AS PRESET` prompts for a name and stores the current slider values. Selecting a name from the `PRESETS` dropdown restores those values without restarting the simulation. Restored exposure, curve toe, and curve shoulder values take effect on the next manual restart or image load.
 
 - Presets are stored in `presets.json` in the sketch folder.
 - Saving with an existing name updates that preset.
