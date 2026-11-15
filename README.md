@@ -4,7 +4,7 @@ A Processing sketch that simulates lith-style development dynamics from an input
 
 ## Example
 
-![alt text](example/ratcliffe-lith.jpg)
+![a lith image of ratcliffe-on-soar power station](example/ratcliffe-lith.jpg)
 
 Ratcliffe-on-Soar Power Station. Processed from the monochrome image ratcliffe-mono.jpg in the examples folder, with 184 iterations. Parameters were mostly default values except grain_amount = 0.5, curve_shoulder = 4.31.
 
@@ -31,6 +31,8 @@ Each simulation step updates three main per-pixel state values:
 - developed density (`developed`)
 
 The rendered output maps density from the paper base -> sepia -> black.
+
+![an image of a lith simulator program](example/lith-sim-screenshot.png)
 
 ## Parameters
 
