@@ -8,6 +8,10 @@ A Processing sketch that simulates lith-style development dynamics from an input
 
 Ratcliffe-on-Soar Power Station. Processed from the monochrome image ratcliffe-mono.jpg in the examples folder, with 184 iterations. Parameters were mostly default values except grain_amount = 0.5, curve_shoulder = 4.31.
 
+For more examples see https://www.guyjbrown.com/posts/digital-lith/
+
+For a viewo demo see https://www.youtube.com/watch?v=oF21OmjIUIM&t=6s
+
 ## How to run this code
 
 This requires Processing and the ControlP5 library. Download Processing from https://processing.org. Run Processing and load the LithSimulator.pde file. Add the ControlP5 library in Processing by going to Sketch > Import Library > Manage Libraries and searching for "ControlP5". 
